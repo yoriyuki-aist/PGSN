@@ -1,0 +1,103 @@
+<?xml version="1.0" ?>
+<!-- 西原さんによるCAPSの形式化 -->
+<PGSN>
+    <!-- CC関連 -->
+    <!-- EAL  -->
+    <classdef name="EAL">
+        <class_description>EAL基底クラス</class_description>
+    </classdef>
+
+    <classdef name="EAL1" inherit="EAL">
+        <class_desciption>EAL&gt;1</class_desciption>
+    </classdef>
+    
+    <def name="eal1">
+        <object class="EAL1"></object>
+    </def>
+
+    <classdef name="EAL2" inherit="EAL1">
+        <class_desciption>EAL&gt;2</class_desciption>
+    </classdef>
+
+    <!-- 攻撃者の能力 -->
+    <classdef name="AttackerAbility">
+        <class_description>攻撃者の能力（基底クラス）</class_description>
+    </classdef>
+
+    <classdef name="EnchancedBasic" inherit="AttackerAbility">
+        <class_description>Enchanced-Basic</class_description>
+    </classdef>
+
+    <def name="enhaned_basic">
+        <object class="EnchancedBasic"></object>
+    </def>
+
+    <!-- ゴール -->
+    <classdef name="CCGoal" inherit="Goal">
+        <attirbute name="eal" instance="EAL"/>
+        <attirbute name="attacker_ability" instance="AttackerAbility"/>
+    </classdef>
+
+    <classdef name="CAPAGoal" inherit="CCGoal">
+        <attribute name="eal">eal1</attribute>
+        <attribute name="attacker_ability">enchanced_basic</attribute>
+    </classdef>
+
+    <!-- CPA -->
+
+    <classdef name="CInfo">
+        <attribute name="reliance_info"/>
+        <attribute name="desc_info"/>
+        <attribute name="comp_rationale"/>
+    </classdef>
+
+    <defun name="understand_composition">
+        <arg name="c_info" instance="CInfo"/>
+        <arg name="configuration_list"/>
+        <arg name="composition_vulnerability_review"/>
+        <CAPAGoal>
+            <description>
+                合成が理解されている
+            </description>
+            <Strategy>
+                <description>合成の妥当性因子の列挙</description>
+                <Goal>
+                    <description>CM scope</description>
+                    <evidence var="configuration_list"/>
+                </Goal>
+                <Goal>
+                    <description>Reliance info</description>
+                    <evidence><get_attr name="reliance_info" var="c_info"/></evidence>
+                </Goal>
+                <Goal>
+                    <description>Desc. Info</description>
+                    <evidence><get_attr name="desc_info" var="c_info"/></evidence>
+                </Goal>
+                <Goal>
+                    <description>Composition rationale</description>
+                    <evidence><get_attr name="comp_rationale" var="c_info"/></evidence>
+                </Goal>
+                <Goal>
+                    <description>compostion vulnerability review</description>
+                    <evidence var="composition_vulnerability_review"/>
+                </Goal>
+            </Strategy>
+        </CAPAGoal>
+    </defun>
+
+    <defun name="safe_composition">
+        <arg name="cs"/>
+        <arg name="configuration_list"/>
+        <arg name="composition_vulnerability_review"/>
+        <map args="cs">
+            <lambda arg="c">
+                <apply fun="undersand_composition">
+                    <arg name="c_info" var="c"/>
+                    <arg name="configuration_list" var="configuration_list"/>
+                    <arg name="composition_vulnerability_review" var="composition_vulnerability_review"/>
+                </apply>
+            </lambda>
+        </map>
+    </defun>
+
+</PGSN>

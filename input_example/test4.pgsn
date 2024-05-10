@@ -1,0 +1,1 @@
+goal("goal1", strat("strategy1", {ev("evdence21")}))

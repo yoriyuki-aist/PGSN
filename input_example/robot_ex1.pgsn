@@ -1,0 +1,9 @@
+goal("The system in secure.",
+    strat("Argument over each subsystems.",
+    {
+        goal("System A is secure.",
+            ev("Evidence on System A.")), 
+        goal("System B is secure.",
+            ev("Evidence on System B"))
+    })
+)

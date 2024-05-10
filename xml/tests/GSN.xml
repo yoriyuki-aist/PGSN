@@ -1,0 +1,63 @@
+<?xml version="1.0" ?>
+<PGSN>
+    <Goal>
+        <description>Xはセキュア</description>
+        <context>規格XXXXによる認証</context>
+        <context><var name="c" instance="Ubuntu"></var></context>
+        <assumption>ゼロデイ攻撃はない</assumption>
+        <because>
+            <Strategy>
+                <description></description>
+                <goal></goal>
+                <goal></goal>
+            </Strategy>
+        </because>
+    </Goal>
+
+    <Goal>
+        <description>Xはセキュア</description>
+        <because>
+            <Evidence>
+                <description>運用実績</description>
+            </Evidence>    
+        </because>
+    </Goal>
+
+    <Goal>
+        <description>Xはセキュア</description>
+        <because><var name="assumption1"/></because>
+    </Goal>
+
+    <Strategy>
+        <description>...</description>
+        <goal>...</goal>
+        <goal>...</goal>
+    </Strategy>
+
+    <Evidence>
+        <description>...</description>
+    </Evidence>
+
+    <!-- Context, AssumptionはGoalのsubclass, attributeはいまのところGoalと同じでクラス名が違うだけ -->
+    <!-- Context, Assumptionは文字列でも良い -->
+    <!-- 違いは使い方：Contextは最終的には正当化されなければならない -->
+    <!-- Assumptionは変数として残る -->
+    <!-- Context, Assumptionはあらかじめ定義されているがあえて定義を書くとこうなる -->
+    <class name="Context" inherit="Goal"></class>
+    <class name="Assumption" inherit="Goal"></class>
+
+    <class name="Ubuntu" inherit="Assumption">
+        <class_attribute name="description">Ubuntu version</class_attribute>
+        <attribute name="ubuntu_ver"/>
+        <attribute_list name="pacakages" elem="package"/>
+    </class>
+
+    <def name="c">
+        <object class ="Ubuntu">
+            <description></description>
+            <attribute name="ubuntu">20.0</attribute>
+            <package>gcc</package>
+            <package>libc</package>
+        </object>
+    </def>
+</PGSN>

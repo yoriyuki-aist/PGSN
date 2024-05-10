@@ -1,0 +1,196 @@
+<?xml version="1.0" ?>
+<PGSN>
+
+    <!-- class and object -->
+
+        <!-- クラス定義 -->
+        <class name="C" inherit="B">
+            <!-- スーパークラスBのアトリビュートを設定、上書き不可能 -->
+            <attribute name="attr1">"C"</attribute>
+            <attribute name="attr2"/>
+            <attribute_list name="attrs" elem="attr"/>
+        </class>
+        <!-- オブジェクト生成 -->
+        <object class="C">
+            <attribute name="attr2">今日はいい天気</attribute>
+            <attribute name="attr">g1</attribute>
+            <attribute name="attr">g2</attribute>
+        </object>
+    
+        <get name="version"><var name="obj"/></get>
+        <call name="run"><var name="obj"/></call>
+    
+    <!-- GSN -->
+
+    <Goal>
+        <description>Xはセキュア</description>
+        <context>規格XXXXによる認証</context>
+        <context><var name="c" instance="Ubuntu"></var></context>
+        <assumption>ゼロデイ攻撃はない</assumption>
+        <because>
+            <Strategy>
+                <description></description>
+                <goal></goal>
+                <goal></goal>
+            </Strategy>
+        </because>
+    </Goal>
+
+    <Goal>
+        <description>Xはセキュア</description>
+        <because>
+            <Evidence>
+                <description>運用実績</description>
+            </Evidence>    
+        </because>
+    </Goal>
+
+    <Goal>
+        <description>Xはセキュア</description>
+        <because><var name="assumption1"/></because>
+    </Goal>
+
+    <Strategy>
+        <description>...</description>
+        <goal>...</goal>
+        <goal>...</goal>
+    </Strategy>
+
+    <Evidence>
+        <description>...</description>
+    </Evidence>
+
+    <!-- Context, AssumptionはGoalのsubclass, attributeはいまのところGoalと同じでクラス名が違うだけ -->
+    <!-- Context, Assumptionは文字列でも良い -->
+    <!-- 違いは使い方：Contextは最終的には正当化されなければならない -->
+    <!-- Assumptionは変数として残る -->
+    <!-- Context, Assumptionはあらかじめ定義されているがあえて定義を書くとこうなる -->
+    <class name="Context" inherit="Goal"></class>
+    <class name="Assumption" inherit="Goal"></class>
+
+    <class name="Ubuntu" inherit="Assumption">
+        <class_attribute name="description">Ubuntu version</class_attribute>
+        <attribute name="ubuntu_ver"/>
+        <attribute_list name="pacakages" elem="package"/>
+    </class>
+
+    <def name="c">
+        <object class ="Ubuntu">
+            <description></description>
+            <attribute name="ubuntu">20.0</attribute>
+            <package>gcc</package>
+            <package>libc</package>
+        </object>
+    </def>
+
+    <!-- 定義 -->
+    <defun name="f">
+        <arg name="arg1"/>
+        <arg name="arg2"/>
+        <apply>
+            <var name="arg1"/>
+            <var name="arg2"/>
+        </apply>
+    </defun>
+    <!-- 等価 -->
+    <def name="f">
+        <defun>
+            <arg name="arg1"/>
+            <arg name="arg2"/>
+            <apply>
+                <fun><var name="g"/></fun>
+                <arg name="arg1"></arg> 
+                <arg name="arg2"></arg> 
+            </apply>    
+        </defun>
+    </def>
+
+    <!-- 1引数関数, ラベルなし引数 -->
+    <def name="f">
+        <lambda arg="g">
+            <apply>
+                <fun><var name="g"/></fun>
+                <arg name="arg1"></arg> 
+                <arg name="arg2"></arg> 
+            </apply>    
+        </lambda>
+    </def>
+
+
+    <!-- 関数適用 -->
+    <apply>
+        <fun><var name="g"/></fun>
+        <arg name="arg1"></arg> 
+        <arg name="arg2"></arg> 
+    </apply>    
+    <!-- 等価　-->
+    <apply fun="f">
+        <arg name="arg1"></arg> 
+        <arg name="arg2"></arg> 
+    </apply>
+
+    <apply name="f" arg="x"/>
+    <!-- 等価 -->
+    <apply name="f">
+        <arg name="arg"><var name="x"/></arg> 
+    </apply>
+
+
+    <!-- 定義済み関数 -->
+    <map>
+        <fun>f</fun>
+        <arg>s</arg>
+    </map>
+    <map fun="f" arg="s"/>
+    
+    <!-- 局所定義 -->
+    <!-- 定義はそのレベルのタグが閉じられるまで有効 -->
+    <apply>
+        <def name="x">1</def>
+        ...
+    </apply>
+
+    <!-- データ構造 -->
+    <Set>
+        <li></li>
+        <li></li>
+    </Set>
+
+    <List> <!--  -->
+        <li></li>
+        <li></li>
+    </List>
+
+    <Record>
+        <record name="package_name">libc</record>
+        <record name="version">10.0</record>
+    </Record>
+
+    <field name="version"><var name="r"/></field>
+
+
+    <!-- 略記法 -->
+    <!-- 等価 -->
+    <tag var="x"/>
+    <tag><var name="x"/></tag>
+
+    <!-- 等価 -->
+    <!-- <li></li>は省略可能 -->
+    <li><tag></tag></li> 
+    <tag></tag>
+
+    <!-- Module -->
+    <Module name="M">
+        <param name="X"/>
+        <api name="f">
+            <arg name="arg1"/>
+            <arg name="arg2"/>            
+            ...
+        </api>
+    </Module>
+
+    <!-- TODO -->
+    <!-- Classのことをもう少し考える。class method？ -->
+    <!-- Module, Classとどう関係づけるか -->
+    <!-- 名前空間 XMLのものを使う？<- だめ -->
+</PGSN>
