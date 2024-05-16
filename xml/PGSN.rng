@@ -1,13 +1,145 @@
-<element name="addressBook" xmlns="http://relaxng.org/ns/structure/1.0">
+<grammar  xmlns="http://relaxng.org/ns/structure/1.0">
+
+  <start>
+    <element name="PGSN">
+      <ref name="defs_pat"/>
+      <ref name="val_pat"/>
+    </element>
+  </start>
+
+
+  <define name="defs_pat">
     <zeroOrMore>
-      <element name="card">
-        <element name="name">
-          <text/>
+      <choice>
+        <element name="def">
+          <attribute name="name"/>
+          <ref name="val_pat"/>
         </element>
-        <element name="email">
-          <text/>
+        <element name="defun">
+          <attribute name="name"/>
+          <ref name="defun_pat"/>
         </element>
+        <element name="class">
+          <ref name="class_pat"/>
+        </element>      
+      </choice>
+    </zeroOrMore>
+  </define>
+
+
+  <define name="defun_pat">
+    <zeroOrMore>
+      <element name="arg">
+        <attribute name="name"/>
       </element>
     </zeroOrMore>
-  </element>
+    <ref name="val_pat"/>
+  </define>
+
+
+  <define name="class_pat">
+    <attribute name="name"></attribute>
+    <optional>
+      <attribute name="inherit"></attribute>
+    </optional>
+    <zeroOrMore>
+      <element name="attribute">
+        <attribute name="name"/>
+        <optional>
+          <ref name="val_pat"/>
+        </optional>
+      </element>  
+    </zeroOrMore>
+    <ref name="val_pat"/>
+  </define>
+
+
+  <define name="object_pat">
+    <attribute name="class"/>
+    <zeroOrMore>
+      <element name="attribute">
+        <attribute name="name">
+        </attribute>
+        <optional>
+          <ref name="val_pat"/>
+        </optional>
+    </element>  
+    </zeroOrMore>
+    <ref name="val_pat"/>
+  </define>
+
+
+  <define name="val_pat">
+    <choice>
+      <attribute name="var"/>
+      <oneOrMore>
+        <ref name="base_val_pat"/>
+      </oneOrMore>  
+    </choice>
+  </define>
+
+
+  <define name="base_val_pat">
+    <choice>
+      <text/>
+      <element name="object"><ref name="object_pat"/></element>
+      <element name="var">
+        <attribute name="name"/>
+      </element>
+      <element name="arg">
+        <attribute name="name"/>
+        <ref name="val_pat"/>
+      </element>
+      <element name="fun">
+        <ref name="defun_pat"/>
+      </element>
+      <element name="div">
+        <ref name="defs_pat"/>
+        <ref name="val_pat"/>
+      </element>
+      <ref name="build_in_func"/>
+      <ref name="data_type_pat"/>
+    </choice>
+  </define>
+
+  <define name="build_in_func">
+    <choice>
+      <element name="map"><empty/></element>  
+      <element name="field">
+        <attribute name="name"/>
+      </element>
+    </choice>
+  </define>
+
   
+  <define name="data_type_pat">
+    <choice>
+      <element name="ul">
+        <ref name="list_pat"/>
+      </element>
+      <element name="ol">
+        <ref name="list_pat"/>
+      </element>
+      <element name="dl">
+        <zeroOrMore>
+          <element name="dt">
+            <choice>
+              <attribute name="name"/>
+              <text/>
+            </choice>
+          </element>
+          <element name="dd">
+            <ref name="val_pat"/>
+          </element>
+        </zeroOrMore>
+      </element>
+    </choice>
+  </define>
+
+
+  <define name="list_pat">
+    <zeroOrMore>
+      <element name="li"><ref name="val_pat"/></element>
+    </zeroOrMore>
+  </define>
+</grammar>
