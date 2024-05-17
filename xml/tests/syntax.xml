@@ -17,44 +17,6 @@
     
     <!-- GSN -->
 
-    <Goal>
-        <description>Xはセキュア</description>
-        <context>規格XXXXによる認証</context>
-        <context><var name="c" instance="Ubuntu"></var></context>
-        <assumption>ゼロデイ攻撃はない</assumption>
-        <because>
-            <Strategy>
-                <description></description>
-                <goal></goal>
-                <goal></goal>
-            </Strategy>
-        </because>
-    </Goal>
-
-    <Goal>
-        <description>Xはセキュア</description>
-        <because>
-            <Evidence>
-                <description>運用実績</description>
-            </Evidence>    
-        </because>
-    </Goal>
-
-    <Goal>
-        <description>Xはセキュア</description>
-        <because><var name="assumption1"/></because>
-    </Goal>
-
-    <Strategy>
-        <description>...</description>
-        <goal>...</goal>
-        <goal>...</goal>
-    </Strategy>
-
-    <Evidence>
-        <description>...</description>
-    </Evidence>
-
     <!-- Context, AssumptionはGoalのsubclass, attributeはいまのところGoalと同じでクラス名が違うだけ -->
     <!-- Context, Assumptionは文字列でも良い -->
     <!-- 違いは使い方：Contextは最終的には正当化されなければならない -->
@@ -72,10 +34,10 @@
     <def name="c">
         <object class ="Ubuntu">
             <attribute name="ubuntu">20.0</attribute>
-            <attribute name="packages"><List>
+            <attribute name="packages"><ol>
                 <li>gcc</li>
                 <li>libc</li>
-            </List></attribute>
+            </ol></attribute>
         </object>
     </def>
 
@@ -96,6 +58,40 @@
             <arg name="arg2">X</arg> 
         </fun>
     </def>
+
+    <Goal>
+        <description>Xはセキュア</description>
+        <context>規格XXXXによる認証</context>
+        <context><var name="c" instance="Ubuntu"></var></context>
+        <assumption>ゼロデイ攻撃はない</assumption>
+        <Strategy>
+            <description></description>
+            <goal></goal>
+            <goal></goal>
+        </Strategy>
+    </Goal>
+
+    <Goal>
+        <description>Xはセキュア</description>
+        <Evidence>
+            <description>運用実績</description>
+        </Evidence>    
+    </Goal>
+
+    <Goal>
+        <description>Xはセキュア</description>
+        <var name="assumption1"/>
+    </Goal>
+
+    <Strategy>
+        <description>...</description>
+        <goal>...</goal>
+        <goal>...</goal>
+    </Strategy>
+
+    <Evidence>
+        <description>...</description>
+    </Evidence>
 
     <object class="C">
         <attribute name="attr2">今日はいい天気</attribute>

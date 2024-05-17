@@ -50,7 +50,6 @@
         </optional>
       </element>  
     </zeroOrMore>
-    <ref name="val_pat"/>
   </define>
 
 
@@ -65,11 +64,13 @@
         </optional>
     </element>  
     </zeroOrMore>
-    <ref name="val_pat"/>
   </define>
 
 
   <define name="val_pat">
+    <optional>
+      <attribute name="instance"/>
+    </optional>
     <choice>
       <attribute name="var"/>
       <oneOrMore>
@@ -85,6 +86,7 @@
       <element name="object"><ref name="object_pat"/></element>
       <element name="var">
         <attribute name="name"/>
+        <optional><attribute name="instance"/></optional>
       </element>
       <element name="arg">
         <attribute name="name"/>
@@ -99,8 +101,26 @@
       </element>
       <ref name="build_in_func"/>
       <ref name="data_type_pat"/>
+      <element name="Goal">
+        <ref name="gsn_header"/>
+        <ref name="val_pat"/>
+      </element>
+      <element name="Strategy">
+        <ref name="gsn_header"/>
+        <oneOrMore>
+          <element name="goal">
+            <ref name="val_pat"/>
+          </element>
+        </oneOrMore>
+      </element>
+      <element name="Evidence">
+        <element name="description">
+          <ref name="val_pat"/>
+        </element>
+      </element>
     </choice>
   </define>
+
 
   <define name="build_in_func">
     <choice>
@@ -142,4 +162,22 @@
       <element name="li"><ref name="val_pat"/></element>
     </zeroOrMore>
   </define>
+
+
+  <define name="gsn_header">
+    <interleave>
+      <optional>
+        <element name="description"><ref name="val_pat"/></element>
+      </optional>
+      <zeroOrMore>
+        <element name="context"><ref name="val_pat"/></element>
+      </zeroOrMore>
+      <zeroOrMore>
+        <element name="assumption">
+          <ref name="val_pat"/>
+        </element>
+     </zeroOrMore>
+    </interleave>
+  </define>
+
 </grammar>
