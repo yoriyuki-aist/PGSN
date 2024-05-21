@@ -1,55 +1,62 @@
 <grammar  xmlns="http://relaxng.org/ns/structure/1.0">
 
-  <start>
-    <element name="PGSN">
-      <ref name="defs_pat"/>
-      <ref name="val_pat"/>
-    </element>
-  </start>
 
-
-  <define name="defs_pat">
-    <zeroOrMore>
-      <choice>
-        <element name="def">
-          <attribute name="name"/>
+  <define name="gsn_header">
+    <interleave>
+      <optional>
+        <element name="description"><ref name="val_pat"/></element>
+      </optional>
+      <zeroOrMore>
+        <element name="context"><ref name="val_pat"/></element>
+      </zeroOrMore>
+      <zeroOrMore>
+        <element name="assumption">
           <ref name="val_pat"/>
         </element>
-        <element name="defun">
-          <attribute name="name"/>
-          <ref name="defun_pat"/>
-        </element>
-        <element name="class">
-          <ref name="class_pat"/>
-        </element>      
-      </choice>
+     </zeroOrMore>
+    </interleave>
+  </define>
+
+
+  <define name="list_pat">
+    <zeroOrMore>
+      <element name="li"><ref name="val_pat"/></element>
     </zeroOrMore>
   </define>
 
 
-  <define name="defun_pat">
-    <zeroOrMore>
-      <element name="arg">
+  <define name="data_type_pat">
+    <choice>
+      <element name="ul">
+        <ref name="list_pat"/>
+      </element>
+      <element name="ol">
+        <ref name="list_pat"/>
+      </element>
+      <element name="dl">
+        <zeroOrMore>
+          <element name="dt">
+            <choice>
+              <attribute name="name"/>
+              <text/>
+            </choice>
+          </element>
+          <element name="dd">
+            <ref name="val_pat"/>
+          </element>
+        </zeroOrMore>
+      </element>
+    </choice>
+  </define>
+
+
+  <define name="build_in_func">
+    <choice>
+      <element name="map"><empty/></element>  
+      <element name="field">
         <attribute name="name"/>
       </element>
-    </zeroOrMore>
-    <ref name="val_pat"/>
-  </define>
-
-
-  <define name="class_pat">
-    <attribute name="name"></attribute>
-    <optional>
-      <attribute name="inherit"></attribute>
-    </optional>
-    <zeroOrMore>
-      <element name="attribute">
-        <attribute name="name"/>
-        <optional>
-          <ref name="val_pat"/>
-        </optional>
-      </element>  
-    </zeroOrMore>
+    </choice>
   </define>
 
 
@@ -64,19 +71,6 @@
         </optional>
     </element>  
     </zeroOrMore>
-  </define>
-
-
-  <define name="val_pat">
-    <optional>
-      <attribute name="instance"/>
-    </optional>
-    <choice>
-      <attribute name="var"/>
-      <oneOrMore>
-        <ref name="base_val_pat"/>
-      </oneOrMore>  
-    </choice>
   </define>
 
 
@@ -122,62 +116,69 @@
   </define>
 
 
-  <define name="build_in_func">
+  <define name="val_pat">
+    <optional>
+      <attribute name="instance"/>
+    </optional>
     <choice>
-      <element name="map"><empty/></element>  
-      <element name="field">
-        <attribute name="name"/>
-      </element>
+      <attribute name="var"/>
+      <oneOrMore>
+        <ref name="base_val_pat"/>
+      </oneOrMore>  
     </choice>
   </define>
-
   
-  <define name="data_type_pat">
-    <choice>
-      <element name="ul">
-        <ref name="list_pat"/>
-      </element>
-      <element name="ol">
-        <ref name="list_pat"/>
-      </element>
-      <element name="dl">
-        <zeroOrMore>
-          <element name="dt">
-            <choice>
-              <attribute name="name"/>
-              <text/>
-            </choice>
-          </element>
-          <element name="dd">
-            <ref name="val_pat"/>
-          </element>
-        </zeroOrMore>
-      </element>
-    </choice>
-  </define>
-
-
-  <define name="list_pat">
+  <define name="class_pat">
+    <attribute name="name"></attribute>
+    <optional>
+      <attribute name="inherit"></attribute>
+    </optional>
     <zeroOrMore>
-      <element name="li"><ref name="val_pat"/></element>
+      <element name="attribute">
+        <attribute name="name"/>
+        <optional>
+          <ref name="val_pat"/>
+        </optional>
+      </element>  
     </zeroOrMore>
   </define>
 
 
-  <define name="gsn_header">
-    <interleave>
-      <optional>
-        <element name="description"><ref name="val_pat"/></element>
-      </optional>
-      <zeroOrMore>
-        <element name="context"><ref name="val_pat"/></element>
-      </zeroOrMore>
-      <zeroOrMore>
-        <element name="assumption">
+  <define name="defun_pat">
+    <zeroOrMore>
+      <element name="arg">
+        <attribute name="name"/>
+      </element>
+    </zeroOrMore>
+    <ref name="val_pat"/>
+  </define>
+
+
+  <define name="defs_pat">
+    <zeroOrMore>
+      <choice>
+        <element name="def">
+          <attribute name="name"/>
           <ref name="val_pat"/>
         </element>
-     </zeroOrMore>
-    </interleave>
+        <element name="defun">
+          <attribute name="name"/>
+          <ref name="defun_pat"/>
+        </element>
+        <element name="class">
+          <ref name="class_pat"/>
+        </element>      
+      </choice>
+    </zeroOrMore>
   </define>
+
+
+  <start>
+    <element name="PGSN">
+      <ref name="defs_pat"/>
+      <ref name="val_pat"/>
+    </element>
+  </start>
+
 
 </grammar>
