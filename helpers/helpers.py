@@ -4,3 +4,10 @@ def not_none(instance, attribute, value):
 
 def non_negative(instance, attribute, value):
     assert value >= 0
+
+
+def default(x, default):
+    if x is None:
+        return default
+    else:
+        return x

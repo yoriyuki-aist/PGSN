@@ -1,52 +1,115 @@
 from __future__ import annotations
 import abc
+import optional
 from enum import Enum
-from attrs import define, field, frozen
+from typing import TypeAlias, Callable
+from attrs import define, field, frozen, evolve
 from meta_info.meta_info import MetaInfo
 from helpers import helpers
 
 
-class Updated(Enum):
-    YES = 1
-    NO = 0
-
+Term: TypeAlias = "Term"
+FreeVar: TypeAlias = "FreeVar"
+Context: TypeAlias = dict[FreeVar, Term]
 
 @frozen(kw_only=True)
 class Term:
     meta_info: MetaInfo = MetaInfo.empty()
 
     @abc.abstractmethod
-    def eval(self) -> Term:
+    def eval(self, context: Context) -> Term | None:
+        pass
+
+    @abc.abstractmethod
+    def shift(self, num: int) -> Term:
+        pass
+
+    @abc.abstractmethod
+    def subst(self, term: Term) -> Term:
         pass
 
 
 @frozen
-class Var(Term):
-    __match_args__ = ('x',)
-    x: int = field(validator=helpers.non_negative)
+class Predefined(Term):
+    __match_args__ = ('name',)
+    name: str = field(validator=helpers.not_none)
 
-    def eval(self):
-        return Updated.NO, self
+    def eval(self, context):
+        return None
+
+    def shift(self, _):
+        return self
+
+    def subst(self, _):
+        return self
+
+
+goal = Predefined(name="Goal")
+strategy = Predefined(name="Strategy")
+evidence = Predefined(name="Evidence")
+context = Predefined(name="Context")
+assumption = Predefined(name="Assumption")
+
+
+@frozen
+class FreeVar(Term):
+    __match_args__ = ('x',)
+    x: str = field(validator=helpers.not_none)
+
+    def eval(self, context):
+        if self in context:
+            return context[self]
+        else:
+            return None
+
+    def shift(self, _):
+        return self
+
+    def subst(self, _):
+        return self
+
+@frozen
+class BndVar(Term):
+    __match_args__ = ('num',)
+    num: int = field(validator=helpers.non_negative)
+
+    def eval(self, context):
+        return None
+
+    def shift(self, shift_num):
+        return evolve(self, num=self.num+shift_num)
+
+    def subst(self, term):
+        if self.num == 0:
+            return term
+        else:
+            return self
 
 
 @frozen
 class Abs(Term):
+    v: BndVar = field(validator=helpers.non_negative)
     t: Term = field(validator=helpers.not_none)
 
+    @classmethod
+    def abstract(cls, variable:FreeVar, term:Term):
+        term = term.shift(1)
+        bnd_var = BndVar(0)
+        term = term.eval({variable: bnd_var})
+        return cls(v=bnd_var, t=term)
 
+    def eval(self, context):
+        t_eval = self.t.eval(context)
+        if t_eval is None:
+            return None
+        else:
+            return evolve(self, t=t_eval)
 
-class TmAbs(ASTNode):
-    _fields = ('x', 't1')
-    __match_args__ = ('fi', 'x', 't1')
+    def shift(self, shift_num):
+        return evolve(self, v=evolve(self.v, num=self.v.num+1), t=self.t.shift(1))
 
-    def __init__(self, fi: DebugInfo, x: str, t1: ASTNode):
-        super().__init__(fi)
-        self.x = x
-        self.t1 = t1
-
-    def __eq__(self, other):
-        return (isinstance(other, self.__class__) and self.__dict__ == other.__dict__)
-
+    def subst(self, term):
+        return self
 
 class TmApp(ASTNode):
     _fields = ('t1', 't2')
@@ -85,239 +148,26 @@ class TmFmtStr(ASTNode):
         return (isinstance(other, self.__class__) and self.__dict__ == other.__dict__)
 
 
-class TmGoal(ASTNode):
-    _fields = ('t1', 't2')
-    __match_args__ = ('fi', 't1', 't2')
+@frozen
+class App(Term):
+    t1: Term = field(validator=helpers.not_none)
+    t2: Term = field(validator=helpers.not_none)
+
+    def eval(self, context):
+        t1_eval = self.t1.eval(context)
+        t2_eval = self.t2.eval(context)
+        t1_prime = helpers.default(t1_eval, self.t1)
+        t2_prime = helpers.default(t2_eval, self.t1)
+        if isinstance(t1_prime, Abs):
+            return t1_prime.t.subst(t2_prime)
+        else:
+            if t1_eval is None and t2_eval is None:
+                return None
+            return evolve(self, t1=t1_prime, t2=t2_prime)
+
+    def shift(self, shift_num):
+        return App(t1=self.t1.shift(shift_num), t2=self.t2.shift(shift_num))
+
+    def subst(self, term):
+        return evolve(self, t1=self.t1.subst(term), t2=self.t2.subst(term))
 
-    def __init__(self, fi: DebugInfo, t1: ASTNode, t2: ASTNode):
-        super().__init__(fi)
-        self.t1 = t1
-        self.t2 = t2
-
-    def __eq__(self, other):
-        return (isinstance(other, self.__class__) and self.__dict__ == other.__dict__)
-
-
-class TmStrat(ASTNode):
-    _fields = ('t1', 't2')
-    __match_args__ = ('fi', 't1', 't2')
-
-    def __init__(self, fi: DebugInfo, t1: ASTNode, t2: ASTNode):
-        super().__init__(fi)
-        self.t1 = t1
-        self.t2 = t2
-
-    def __eq__(self, other):
-        return (isinstance(other, self.__class__) and self.__dict__ == other.__dict__)
-
-
-class TmEv(ASTNode):
-    _fields = ('t',)
-    __match_args__ = ('fi', 't',)
-
-    def __init__(self, fi: DebugInfo, t: ASTNode):
-        super().__init__(fi)
-        self.t = t
-
-    def __eq__(self, other):
-        return (isinstance(other, self.__class__) and self.__dict__ == other.__dict__)
-
-
-class TmSet(ASTNode):
-    _fields = ('t_list',)
-    __match_args__ = ('fi', 't_list',)
-
-    def __init__(self, fi: DebugInfo, t_list: list):
-        super().__init__(fi)
-        self.t_set = []
-        for t in t_list:
-            if t not in self.t_set:
-                self.t_set.append(t)
-        # self.t_list = sorted(self.t_set)
-        self.t_list = self.t_set
-
-    def __eq__(self, other):
-        return (isinstance(other, self.__class__) and self.__dict__ == other.__dict__)
-
-
-class TmMap(ASTNode):
-    _fields = ('t1', 't2')
-    __match_args__ = ('fi', 't1', 't2')
-
-    def __init__(self, fi: DebugInfo, t1: ASTNode, t2: ASTNode):
-        super().__init__(fi)
-        self.t1 = t1
-        self.t2 = t2
-
-    def __eq__(self, other):
-        return (isinstance(other, self.__class__) and self.__dict__ == other.__dict__)
-
-
-class TmRcd(ASTNode):   # aとtのタプルの方が良いかも
-    _fields = ('a_list', 't_list')
-    __match_args__ = ('fi', 'a_list', 't_list')
-
-    def __init__(self, fi: DebugInfo, a_list: list, t_list: list):
-        super().__init__(fi)
-        self.a_list = []
-        self.t_list = []
-        for self.a, self.t in zip(a_list, t_list):
-            if self.a in self.a_list:
-                self.t_list[self.a_list.index(self.a)] = self.t
-            else:
-                self.a_list.append(self.a)
-                self.t_list.append(self.t)
-
-    def __eq__(self, other):
-        return (isinstance(other, self.__class__) and self.__dict__ == other.__dict__)
-
-
-class TmRcdAcs(ASTNode):
-    _fields = ('t', 'a')
-    __match_args__ = ('fi', 't', 'a')
-
-    def __init__(self, fi: DebugInfo, t: ASTNode, a: ASTNode):
-        super().__init__(fi)
-        self.t = t
-        self.a = a
-
-    def __eq__(self, other):
-        return (isinstance(other, self.__class__) and self.__dict__ == other.__dict__)
-
-
-class TmLet(ASTNode):
-    _fields = ('name', 't1', 't2',)
-    __match_args__ = ('fi', 'name', 't1', 't2',)
-
-    def __init__(self, fi: DebugInfo, name: str, t1: ASTNode, t2: ASTNode):
-        super().__init__(fi)
-        self.name = name
-        self.t1 = t1
-        self.t2 = t2
-
-    def __eq__(self, other):
-        return (isinstance(other, self.__class__) and self.__dict__ == other.__dict__)
-
-
-class TmFuncDef(ASTNode):
-    _fields = ('name', 't')
-    __match_args__ = ('fi', 'name', 't')
-
-    def __init__(self, fi: DebugInfo, name: str, t: ASTNode):
-        super().__init__(fi)
-        self.name = name
-        self.t = t
-
-    def __eq__(self, other):
-        return (isinstance(other, self.__class__) and self.__dict__ == other.__dict__)
-
-
-class TmTrue(ASTNode):
-    _fields = ()
-    __match_args__ = ('fi', )
-
-    def __init__(self, fi: DebugInfo,):
-        super().__init__(fi)
-
-    def __eq__(self, other):
-        return (isinstance(other, self.__class__) and self.__dict__ == other.__dict__)
-
-
-class TmFalse(ASTNode):
-    _fields = ()
-    __match_args__ = ('fi', )
-
-    def __init__(self, fi: DebugInfo,):
-        super().__init__(fi)
-
-    def __eq__(self, other):
-        return (isinstance(other, self.__class__) and self.__dict__ == other.__dict__)
-
-
-class TmNot(ASTNode):
-    _fields = ('t',)
-    __match_args__ = ('fi', 't',)
-
-    def __init__(self, fi: DebugInfo, t: ASTNode):
-        super().__init__(fi)
-        self.t = t
-
-    def __eq__(self, other):
-        return (isinstance(other, self.__class__) and self.__dict__ == other.__dict__)
-
-
-class TmAnd(ASTNode):
-    _fields = ('t1', 't2',)
-    __match_args__ = ('fi', 't1', 't2',)
-
-    def __init__(self, fi: DebugInfo, t1: ASTNode, t2: ASTNode):
-        super().__init__(fi)
-        self.t1 = t1
-        self.t2 = t2
-
-    def __eq__(self, other):
-        return (isinstance(other, self.__class__) and self.__dict__ == other.__dict__)
-
-
-class TmOr(ASTNode):
-    _fields = ('t1', 't2',)
-    __match_args__ = ('fi', 't1', 't2',)
-
-    def __init__(self, fi: DebugInfo, t1: ASTNode, t2: ASTNode):
-        super().__init__(fi)
-        self.t1 = t1
-        self.t2 = t2
-
-    def __eq__(self, other):
-        return (isinstance(other, self.__class__) and self.__dict__ == other.__dict__)
-
-
-class TmXor(ASTNode):
-    _fields = ('t1', 't2',)
-    __match_args__ = ('fi', 't1', 't2',)
-
-    def __init__(self, fi: DebugInfo, t1: ASTNode, t2: ASTNode):
-        super().__init__(fi)
-        self.t1 = t1
-        self.t2 = t2
-
-    def __eq__(self, other):
-        return (isinstance(other, self.__class__) and self.__dict__ == other.__dict__)
-
-
-class TmEq(ASTNode):
-    _fields = ('t1', 't2',)
-    __match_args__ = ('fi', 't1', 't2',)
-
-    def __init__(self, fi: DebugInfo, t1: ASTNode, t2: ASTNode):
-        super().__init__(fi)
-        self.t1 = t1
-        self.t2 = t2
-
-    def __eq__(self, other):
-        return (isinstance(other, self.__class__) and self.__dict__ == other.__dict__)
-
-
-class TmIf(ASTNode):
-    _fields = ('t1', 't2', 't3',)
-    __match_args__ = ('fi', 't1', 't2', 't3',)
-
-    def __init__(self, fi: DebugInfo, t1: ASTNode, t2: ASTNode, t3: ASTNode):
-        super().__init__(fi)
-        self.t1 = t1
-        self.t2 = t2
-        self.t3 = t3
-
-    def __eq__(self, other):
-        return (isinstance(other, self.__class__) and self.__dict__ == other.__dict__)
-
-
-class TmNull(ASTNode):
-    _fields = ()
-    __match_args__ = ('fi', )
-
-    def __init__(self, fi: DebugInfo):
-        super().__init__(fi)
-
-    def __eq__(self, other):
-        return (isinstance(other, self.__class__) and self.__dict__ == other.__dict__)
