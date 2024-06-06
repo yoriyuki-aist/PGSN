@@ -1,12 +1,9 @@
 from __future__ import annotations
 import abc
-import optional
-from enum import Enum
-from typing import TypeAlias, Callable
-from attrs import define, field, frozen, evolve
-from meta_info.meta_info import MetaInfo
-from helpers import helpers
-
+from typing import TypeAlias
+from attrs import field, frozen, evolve
+from meta_info import MetaInfo
+import helpers
 
 Term: TypeAlias = "Term"
 FreeVar: TypeAlias = "FreeVar"
@@ -110,42 +107,6 @@ class Abs(Term):
 
     def subst(self, term):
         return self
-
-class TmApp(ASTNode):
-    _fields = ('t1', 't2')
-    __match_args__ = ('fi', 't1', 't2')
-
-    def __init__(self, fi: DebugInfo, t1: ASTNode, t2: ASTNode):
-        super().__init__(fi)
-        self.t1 = t1
-        self.t2 = t2
-
-    def __eq__(self, other):
-        return (isinstance(other, self.__class__) and self.__dict__ == other.__dict__)
-
-
-class TmStr(ASTNode):
-    _fields = ('t',)
-    __match_args__ = ('fi', 't',)
-
-    def __init__(self, fi: DebugInfo, t: ASTNode):
-        super().__init__(fi)
-        self.t = t
-
-    def __eq__(self, other):
-        return (isinstance(other, self.__class__) and self.__dict__ == other.__dict__)
-
-
-class TmFmtStr(ASTNode):
-    _fields = ('t_list',)
-    __match_args__ = ('fi', 't_list',)
-
-    def __init__(self, fi: DebugInfo, t_list: list):
-        super().__init__(fi)
-        self.t_list = t_list
-
-    def __eq__(self, other):
-        return (isinstance(other, self.__class__) and self.__dict__ == other.__dict__)
 
 
 @frozen

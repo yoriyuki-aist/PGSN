@@ -1,6 +1,7 @@
 
 from attrs import frozen, field
-from helpers import helpers
+import helpers
+
 
 @frozen
 class DebugInfo:
