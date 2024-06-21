@@ -5,13 +5,19 @@ from attrs import field, frozen, evolve, define
 from meta_info import MetaInfo
 import helpers
 
+Term: TypeAlias = "Term"
 Named: TypeAlias = "Named"
 Nameless: TypeAlias = "Nameless"
 
 
 @frozen(kw_only=True)
-class Nameless(abc.ABC):
-    meta_info: MetaInfo = MetaInfo.empty()
+class Term(abc.ABC):
+    # meta_info is always not empty
+    meta_info: MetaInfo = field(default=MetaInfo.empty(), validator=helpers.not_none)
+
+
+@frozen(kw_only=True)
+class Nameless(Term):
 
     @abc.abstractmethod
     def eval_or_none(self) -> Nameless | None:
@@ -29,7 +35,7 @@ class Nameless(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def recover_name_with_name_context(self, context: list[str]) -> Named:
+    def recover_name_with_name_context(self, context: list[str], default_name) -> Named:
         pass
 
     def recover_name(self) -> Named:
@@ -56,9 +62,18 @@ class NamelessVariable(Nameless):
         else:
             return self
 
+    def recover_name_with_name_context(self, context, default_name='x'):
+        if 0 <= self.num < len(context):
+            return NamedVariable(meta_info=self.meta_info,
+                                 name=context[self.num])
+        else:
+            name = helpers.default(self.meta_info.name_info, default_name)
+            return NamedVariable(meta_info=self.meta_info,
+                                 name=f"{name}_{self.num}")
+
 
 @frozen
-class NamelessAbs(Nameless):
+class NamelessAbs(Term):
     t: Nameless = field(validator=helpers.not_none)
 
     def eval_or_none(self):
@@ -73,6 +88,14 @@ class NamelessAbs(Nameless):
 
     def subst(self, var, term):
         return evolve(self, t=self.t.subst(var, term))
+
+    def recover_name_with_name_context(self, context, default_name='x'):
+        name = helpers.default(self.meta_info.name_info, default_name)
+        new_context = [name] + context
+        named_term = self.t.recover_name_with_name_context(context=new_context,
+                                                           default_name=default_name)
+        named_variable = NamedVariable(name)
+        return NamedAbs(meta_info=self.meta_info, v=named_variable, t=named_term)
 
 
 @frozen
@@ -95,10 +118,15 @@ class NamelessApp(Nameless):
             return evolve(self, t1=t1_prime, t2=t2_prime)
 
     def shift(self, d, c):
-        return NamelessApp(t1=self.t1.shift(d, c), t2=self.t2.shift(d, c))
+        return evolve(self, t1=self.t1.shift(d, c), t2=self.t2.shift(d, c))
 
     def subst(self, var, term):
         return evolve(self, t1=self.t1.subst(var, term), t2=self.t2.subst(var, term))
+
+    def recover_name_with_name_context(self, context, default_name='x'):
+        named_t1 = self.t1.recover_name_with_name_context(context, default_name)
+        named_t2 = self.t2.recover_name_with_name_context(context, default_name)
+        return NamedApp(meta_info=self.meta_info, t1=named_t1, t2=named_t2)
 
 
 @frozen(kw_only=True)
@@ -157,7 +185,7 @@ class NamedAbs(Named):
 
 
 @frozen
-class App(Named):
+class NamedApp(Named):
     t1: Named = field(validator=helpers.not_none)
     t2: Named = field(validator=helpers.not_none)
 
@@ -168,6 +196,6 @@ class App(Named):
         nameless_t1 = self.t1.remove_name_with_context(context)
         nameless_t2 = self.t2.remove_name_with_context(context)
         return NamelessApp(meta_info=self.meta_info,
-                                   t1=nameless_t1,
-                                   t2=nameless_t2)
+                           t1=nameless_t1,
+                           t2=nameless_t2)
 
