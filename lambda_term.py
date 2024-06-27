@@ -27,8 +27,11 @@ class Nameless(Term):
     def shift(self, num: int, cutoff: int) -> Nameless:
         pass
 
-    def subst(self, variable: int, term: Nameless) -> Nameless:
+    def subst_or_none(self, variable: int, term: Nameless) -> Nameless | None:
         pass
+
+    def subst(self, variable:int, term: Nameless) -> Nameless:
+        return helpers.default(self.subst_or_none(variable, term), self)
 
     def recover_name_with_name_context(self, context: list[str], default_name) -> Named:
         pass
@@ -43,7 +46,7 @@ class NamelessVariable(Nameless):
     num: int = field(validator=helpers.non_negative)
 
     def eval_or_none(self):
-        return self
+        return None
 
     def shift(self, d, cutoff):
         if self.num < cutoff:
@@ -51,11 +54,11 @@ class NamelessVariable(Nameless):
         else:
             return evolve(self, num=self.num+d)
 
-    def subst(self, num, term):
+    def subst_or_none(self, num, term):
         if self.num == num:
             return term
         else:
-            return self
+            return None
 
     def recover_name_with_name_context(self, context, default_name='x'):
         if 0 <= self.num < len(context):
@@ -81,9 +84,13 @@ class NamelessAbs(Nameless):
     def shift(self, d, c):
         return evolve(self, t=self.t.shift(d, c+1))
 
-    def subst(self, var, term):
+    def subst_or_none(self, var, term):
         term_shifted = term.shift(-1, 0)
-        return evolve(self, t=self.t.subst(var+1, term_shifted))
+        substituted = self.t.subst_or_none(var+1, term_shifted)
+        if substituted is None:
+            return None
+        else:
+            return evolve(self, t=substituted)
 
     def recover_name_with_name_context(self, context, default_name='x'):
         name = helpers.default(self.meta_info.name_info, default_name)
@@ -103,7 +110,7 @@ class NamelessApp(Nameless):
         t1_eval = self.t1.eval_or_none()
         t2_eval = self.t2.eval_or_none()
         t1_prime = helpers.default(t1_eval, self.t1)
-        t2_prime = helpers.default(t2_eval, self.t1)
+        t2_prime = helpers.default(t2_eval, self.t2)
         if isinstance(t1_prime, NamelessAbs):
             t2_shifted = self.t2.shift(1, 0)
             t_substituted = self.t1.subst(0, t2_shifted)
@@ -116,27 +123,18 @@ class NamelessApp(Nameless):
     def shift(self, d, c):
         return evolve(self, t1=self.t1.shift(d, c), t2=self.t2.shift(d, c))
 
-    def subst(self, var, term):
-        return evolve(self, t1=self.t1.subst(var, term), t2=self.t2.subst(var, term))
+    def subst_or_none(self, var, term):
+        t1_subst = self.t1.subst(var, term)
+        t2_subst = self.t2.subst(var, term)
+        if t1_subst is None and t2_subst is None:
+            return None
+        else:
+            return evolve(self, t1=self.t1.subst(var, term), t2=self.t2.subst(var, term))
 
     def recover_name_with_name_context(self, context, default_name='x'):
         named_t1 = self.t1.recover_name_with_name_context(context, default_name)
         named_t2 = self.t2.recover_name_with_name_context(context, default_name)
         return NamedApp(meta_info=self.meta_info, t1=named_t1, t2=named_t2)
-
-
-    # @frozen
-    # class DataInNameless(Nameless):
-    #     val: any = field(validator=helpers.not_none)
-    #
-    #     def eval_or_none(self):
-    #         return self
-    #
-    #     def shift(self, d, c):
-    #         return self
-    #
-    #     def recover_name_with_name_context(self, context, default_name='x'):
-    #         return DataInNamed(self.val)
 
 
 @frozen(kw_only=True)
@@ -203,10 +201,58 @@ class NamedApp(Named):
                            t1=nameless_t1,
                            t2=nameless_t2)
 
+# Arbitrary Python data
 
-    # @frozen
-    # class DataInNamed(Named):
-    #     val: any = field(validator=helpers.not_none)
-    #
-    #     def free_variables(self):
-    #
+
+@frozen
+class DataInNameless(Nameless):
+    value: any = field(validator=helpers.not_none)
+
+    def eval_or_none(self):
+        return None
+
+    def shift(self, d, c):
+        return self
+
+    def subst_or_none(self, var, term):
+        return None
+
+    def recover_name_with_name_context(self, context, default_name='x'):
+        return DataInNamed(self.value)
+
+
+@frozen
+class DataInNamed(Named):
+    value: any = field(validator=helpers.not_none)
+
+    def free_variables(self):
+        return set()
+
+    def remove_name_with_context(self, _):
+        return DataInNameless(self.value)
+
+
+# List
+
+@frozen
+class ListInNameless(Nameless):
+    terms: list[Nameless] = field(validator=helpers.not_none)
+
+    def eval_or_none(self):
+        evaluated = [term.eval_or_none() for term in self.terms]
+        if all(t is None for t in evaluated):
+            return None
+        else:
+            return evaluated
+
+    def shift(self, d, c):
+        shifted = [t.shift(d, c) for t in self.terms]
+        return evolve(self, terms=shifted)
+
+    def subst_or_none(self, num, term):
+        subst = [t.subst_or_none(num, term) for t in self.terms]
+        if all(t is None for t in subst):
+            return None
+        else:
+            return subst
+

@@ -7,7 +7,7 @@ def test_meta_info():
     assert info is not None
 
 
-def test_term_id():
+def test_lambda_term_id():
     term = lambda_term.Term()
     assert term.meta_info is not None
     nameless = lambda_term.Nameless()
@@ -27,3 +27,15 @@ def test_term_id():
     reduced = nameless_t.eval()
     assert reduced.meta_info is not None
     assert reduced == id_f.remove_name()
+
+
+def test_lambda_term_data():
+    s1 = lambda_term.DataInNamed('test')
+    assert s1.value == 'test'
+    s2 = s1.remove_name()
+    assert s2.value == s1.value   # type inference error
+
+
+
+
+
