@@ -8,12 +8,6 @@ def test_meta_info():
 
 
 def test_lambda_term_id():
-    term = lambda_term.Term()
-    assert term.meta_info is not None
-    nameless = lambda_term.Nameless()
-    assert nameless.meta_info is not None
-    named = lambda_term.Named()
-    assert named.meta_info is not None
     var_x = lambda_term.NamedVariable('x')
     assert var_x.meta_info is not None
     id_f = lambda_term.NamedAbs(v=var_x, t=var_x)
@@ -36,6 +30,14 @@ def test_lambda_term_data():
     assert s2.value == s1.value   # type inference error
 
 
+def test_lambda_term_list():
+    context = ['x', 'y']
+    var_x = lambda_term.NamedVariable('x')
+    var_y = lambda_term.NamedVariable('y')
+    list_term_1 = lambda_term.ListInNameless([var_x.remove_name_with_context(context),
+                                            var_y.remove_name_with_context(context)])
+    list_term_2 = lambda_term.ListInNamed([var_x, var_y])
+    assert list_term_1 == list_term_2.remove_name_with_context(context)
 
 
 

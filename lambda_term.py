@@ -1,5 +1,6 @@
 from __future__ import annotations
 from typing import TypeAlias
+from abc import ABC, abstractmethod
 from attrs import field, frozen, evolve, define
 from meta_info import MetaInfo
 import helpers
@@ -10,7 +11,7 @@ Nameless: TypeAlias = "Nameless"
 
 
 @frozen(kw_only=True)
-class Term:
+class Term(ABC):
     # meta_info is always not empty
     meta_info: MetaInfo = field(default=MetaInfo(), eq=False)
 
@@ -18,26 +19,30 @@ class Term:
 @frozen(kw_only=True)
 class Nameless(Term):
 
+    @abstractmethod
     def eval_or_none(self) -> Nameless | None:
         pass
 
     def eval(self) -> Named:
         return helpers.default(self.eval_or_none(), self)
 
+    @abstractmethod
     def shift(self, num: int, cutoff: int) -> Nameless:
         pass
 
+    @abstractmethod
     def subst_or_none(self, variable: int, term: Nameless) -> Nameless | None:
         pass
 
     def subst(self, variable:int, term: Nameless) -> Nameless:
         return helpers.default(self.subst_or_none(variable, term), self)
 
-    def recover_name_with_name_context(self, context: list[str], default_name) -> Named:
+    @abstractmethod
+    def recover_name_with_context(self, context: list[str], default_name) -> Named:
         pass
 
     def recover_name(self) -> Named:
-        return self.recover_name_with_name_context([])
+        return self.recover_name_with_context([])
 
 
 @frozen
@@ -60,7 +65,7 @@ class NamelessVariable(Nameless):
         else:
             return None
 
-    def recover_name_with_name_context(self, context, default_name='x'):
+    def recover_name_with_context(self, context, default_name='x'):
         if 0 <= self.num < len(context):
             return NamedVariable(meta_info=self.meta_info,
                                  name=context[self.num])
@@ -92,11 +97,11 @@ class NamelessAbs(Nameless):
         else:
             return evolve(self, t=substituted)
 
-    def recover_name_with_name_context(self, context, default_name='x'):
+    def recover_name_with_context(self, context, default_name='x'):
         name = helpers.default(self.meta_info.name_info, default_name)
         new_context = [name] + context
-        named_term = self.t.recover_name_with_name_context(context=new_context,
-                                                           default_name=default_name)
+        named_term = self.t.recover_name_with_context(context=new_context,
+                                                      default_name=default_name)
         named_variable = NamedVariable(name)
         return NamedAbs(meta_info=self.meta_info, v=named_variable, t=named_term)
 
@@ -131,9 +136,9 @@ class NamelessApp(Nameless):
         else:
             return evolve(self, t1=self.t1.subst(var, term), t2=self.t2.subst(var, term))
 
-    def recover_name_with_name_context(self, context, default_name='x'):
-        named_t1 = self.t1.recover_name_with_name_context(context, default_name)
-        named_t2 = self.t2.recover_name_with_name_context(context, default_name)
+    def recover_name_with_context(self, context, default_name='x'):
+        named_t1 = self.t1.recover_name_with_context(context, default_name)
+        named_t2 = self.t2.recover_name_with_context(context, default_name)
         return NamedApp(meta_info=self.meta_info, t1=named_t1, t2=named_t2)
 
 
@@ -144,9 +149,12 @@ class Named(Term):
     def naming_context(cls, names: set[str]) -> list[str]:
         return sorted(list(names))
 
+
+    @abstractmethod
     def free_variables(self) -> set[str]:
         pass
 
+    @abstractmethod
     def remove_name_with_context(self, naming_context: list[str]) -> Nameless:
         pass
 
@@ -217,7 +225,7 @@ class DataInNameless(Nameless):
     def subst_or_none(self, var, term):
         return None
 
-    def recover_name_with_name_context(self, context, default_name='x'):
+    def recover_name_with_context(self, context, default_name='x'):
         return DataInNamed(self.value)
 
 
@@ -256,3 +264,16 @@ class ListInNameless(Nameless):
         else:
             return subst
 
+    def recover_name_with_context(self, context, default):
+        return ListInNamed([t.recover_name_with_context(context, default) for t in self.terms])
+
+
+@frozen
+class ListInNamed(Named):
+    terms : list[Named] = field(validator=helpers.not_none)
+
+    def free_variables(self):
+        return set().union(*{t.free_variables() for t in self.terms})
+
+    def remove_name_with_context(self, context):
+        return ListInNameless([t.remove_name_with_context(context) for t in self.terms])
