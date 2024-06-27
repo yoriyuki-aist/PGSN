@@ -6,8 +6,8 @@ def non_negative(instance, attribute, value):
     assert value >= 0
 
 
-def default(x, default):
+def default(x, default_value):
     if x is None:
-        return default
+        return default_value
     else:
         return x

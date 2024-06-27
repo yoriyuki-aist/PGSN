@@ -1,5 +1,4 @@
 from __future__ import annotations
-import abc
 from typing import TypeAlias
 from attrs import field, frozen, evolve, define
 from meta_info import MetaInfo
@@ -11,30 +10,26 @@ Nameless: TypeAlias = "Nameless"
 
 
 @frozen(kw_only=True)
-class Term(abc.ABC):
+class Term:
     # meta_info is always not empty
-    meta_info: MetaInfo = field(default=MetaInfo.empty(), validator=helpers.not_none)
+    meta_info: MetaInfo = field(default=MetaInfo(), eq=False)
 
 
 @frozen(kw_only=True)
 class Nameless(Term):
 
-    @abc.abstractmethod
     def eval_or_none(self) -> Nameless | None:
         pass
 
     def eval(self) -> Named:
         return helpers.default(self.eval_or_none(), self)
 
-    @abc.abstractmethod
     def shift(self, num: int, cutoff: int) -> Nameless:
         pass
 
-    @abc.abstractmethod
     def subst(self, variable: int, term: Nameless) -> Nameless:
         pass
 
-    @abc.abstractmethod
     def recover_name_with_name_context(self, context: list[str], default_name) -> Named:
         pass
 
@@ -73,7 +68,7 @@ class NamelessVariable(Nameless):
 
 
 @frozen
-class NamelessAbs(Term):
+class NamelessAbs(Nameless):
     t: Nameless = field(validator=helpers.not_none)
 
     def eval_or_none(self):
@@ -87,7 +82,8 @@ class NamelessAbs(Term):
         return evolve(self, t=self.t.shift(d, c+1))
 
     def subst(self, var, term):
-        return evolve(self, t=self.t.subst(var, term))
+        term_shifted = term.shift(-1, 0)
+        return evolve(self, t=self.t.subst(var+1, term_shifted))
 
     def recover_name_with_name_context(self, context, default_name='x'):
         name = helpers.default(self.meta_info.name_info, default_name)
@@ -129,20 +125,30 @@ class NamelessApp(Nameless):
         return NamedApp(meta_info=self.meta_info, t1=named_t1, t2=named_t2)
 
 
+    # @frozen
+    # class DataInNameless(Nameless):
+    #     val: any = field(validator=helpers.not_none)
+    #
+    #     def eval_or_none(self):
+    #         return self
+    #
+    #     def shift(self, d, c):
+    #         return self
+    #
+    #     def recover_name_with_name_context(self, context, default_name='x'):
+    #         return DataInNamed(self.val)
+
+
 @frozen(kw_only=True)
-class Named(abc.ABC):
-    meta_info: MetaInfo = MetaInfo.empty()
+class Named(Term):
 
     @classmethod
-    def naming_context(cls, vars: set[NamedVariable]) -> list[str]:
-        names = set(map(lambda v: v.name, vars))
+    def naming_context(cls, names: set[str]) -> list[str]:
         return sorted(list(names))
 
-    @abc.abstractmethod
-    def free_variables(self) -> set[NamedVariable]:
+    def free_variables(self) -> set[str]:
         pass
 
-    @abc.abstractmethod
     def remove_name_with_context(self, naming_context: list[str]) -> Nameless:
         pass
 
@@ -153,19 +159,17 @@ class Named(abc.ABC):
         return self.remove_name_with_context(self.my_naming_context())
 
 
-
 @frozen(order=True)
 class NamedVariable(Named):
     name: str = field(validator=helpers.not_none)
 
     def free_variables(self):
-        return {self}
+        return {self.name}
 
     def remove_name_with_context(self, naming_context):
         meta_info = evolve(self.meta_info, name_info=self.name)
         num = naming_context.index(self.name)
         return NamelessVariable(num=num, meta_info=meta_info)
-
 
 
 @frozen
@@ -175,7 +179,7 @@ class NamedAbs(Named):
 
     def free_variables(self):
         f_vars = self.t.free_variables()
-        return f_vars - {self.v}
+        return f_vars - {self.v.name}
 
     def remove_name_with_context(self, context):
         meta_info = evolve(self.meta_info, name_info=self.v.name)
@@ -190,7 +194,7 @@ class NamedApp(Named):
     t2: Named = field(validator=helpers.not_none)
 
     def free_variables(self):
-        return self.t1.free_variables() + self.t2.free_variables()
+        return self.t1.free_variables() | self.t2.free_variables()
 
     def remove_name_with_context(self, context):
         nameless_t1 = self.t1.remove_name_with_context(context)
@@ -199,3 +203,10 @@ class NamedApp(Named):
                            t1=nameless_t1,
                            t2=nameless_t2)
 
+
+    # @frozen
+    # class DataInNamed(Named):
+    #     val: any = field(validator=helpers.not_none)
+    #
+    #     def free_variables(self):
+    #
