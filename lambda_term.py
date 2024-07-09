@@ -210,38 +210,9 @@ class NamedApp(Named):
                            t2=nameless_t2)
 
 
-# Built-in constants
-@frozen
-class BuiltInNameless(Nameless):
-    name: str = field(validator=helpers.not_none)
-
-    def eval_or_none(self):
-        return None
-
-    def shift(self, d, c):
-        return self
-
-    def subst_or_none(self, var, term):
-        return None
-
-    def recover_name_with_context(self, context, default_name='x'):
-        return BuiltInNamed(self.name)
-
-
-@frozen
-class BuiltInNamed(Named):
-    name: str = field(validator=helpers.not_none)
-
-    def free_variables(self):
-        return set()
-
-    def remove_name_with_context(self, _):
-        return BuiltInNameless(self.name)
-
-
 # Arbitrary Python data
 @frozen
-class DataInNameless(Nameless):
+class DataNameless(Nameless):
     value: any = field(validator=helpers.not_none)
 
     def eval_or_none(self):
@@ -254,24 +225,24 @@ class DataInNameless(Nameless):
         return None
 
     def recover_name_with_context(self, context, default_name='x'):
-        return DataInNamed(self.value)
+        return DataNamed(self.value)
 
 
 @frozen
-class DataInNamed(Named):
+class DataNamed(Named):
     value: any = field(validator=helpers.not_none)
 
     def free_variables(self):
         return set()
 
     def remove_name_with_context(self, _):
-        return DataInNameless(self.value)
+        return DataNameless(self.value)
 
 
 # List
 
 @frozen
-class ListInNameless(Nameless):
+class ListNameless(Nameless):
     terms: list[Nameless] = field(validator=helpers.not_none)
 
     def eval_or_none(self):
@@ -293,15 +264,57 @@ class ListInNameless(Nameless):
             return subst
 
     def recover_name_with_context(self, context, default):
-        return ListInNamed([t.recover_name_with_context(context, default) for t in self.terms])
+        return ListNamed([t.recover_name_with_context(context, default) for t in self.terms])
 
 
 @frozen
-class ListInNamed(Named):
-    terms : list[Named] = field(validator=helpers.not_none)
+class ListNamed(Named):
+    terms : list[Named] = field(default=[],
+                                validator=helpers.not_none)
 
     def free_variables(self):
         return set().union(*{t.free_variables() for t in self.terms})
 
     def remove_name_with_context(self, context):
-        return ListInNameless([t.remove_name_with_context(context) for t in self.terms])
+        return ListNameless([t.remove_name_with_context(context) for t in self.terms])
+
+
+@frozen
+class RecordNameless(Nameless):
+    terms: dict[str, Nameless] = field(default={},
+                                  validator=helpers.not_none)
+
+    def eval_or_none(self):
+        evaluated = {label: t.eval_or_none() for label, t in self.terms.items()}
+        if all(t is None for t in evaluated.values()):
+            return None
+        else:
+            return evaluated
+
+    def shift(self, d, c):
+        shifted = {label: t.shift(d, c) for label, t in self.terms.items()}
+        return evolve(self, terms=shifted)
+
+    def subst_or_none(self, num, term):
+        subst = {label: t.subst_or_none(num, term) for label, t in self.terms.items()}
+        if all(t is None for t in subst.values()):
+            return None
+        else:
+            return subst
+
+    def recover_name_with_context(self, context, default):
+        return RecordNamed({label: t.recover_name_with_context(context, default) for label, t in self.terms.items()})
+
+
+@frozen
+class RecordNamed(Named):
+    terms: dict[str, Named] = field(default={},
+                               validator=helpers.not_none)
+
+    def free_variables(self):
+        return set().union(*{t.free_variables() for t in self.terms.values()})
+
+    def remove_name_with_context(self, context):
+        return RecordNameless({label: t.remove_name_with_context(context) for label, t in self.terms.items()})
+
+
