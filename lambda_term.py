@@ -209,9 +209,37 @@ class NamedApp(Named):
                            t1=nameless_t1,
                            t2=nameless_t2)
 
+
+# Built-in constants
+@frozen
+class BuiltInNameless(Nameless):
+    name: str = field(validator=helpers.not_none)
+
+    def eval_or_none(self):
+        return None
+
+    def shift(self, d, c):
+        return self
+
+    def subst_or_none(self, var, term):
+        return None
+
+    def recover_name_with_context(self, context, default_name='x'):
+        return BuiltInNamed(self.name)
+
+
+@frozen
+class BuiltInNamed(Named):
+    name: str = field(validator=helpers.not_none)
+
+    def free_variables(self):
+        return set()
+
+    def remove_name_with_context(self, _):
+        return BuiltInNameless(self.name)
+
+
 # Arbitrary Python data
-
-
 @frozen
 class DataInNameless(Nameless):
     value: any = field(validator=helpers.not_none)
