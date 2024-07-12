@@ -46,5 +46,8 @@ class ListNamed(Named):
         return ListNameless([t.remove_name_with_context(context) for t in self.terms])
 
 
+# List functions
+
+
 
 

@@ -1,7 +1,7 @@
 from __future__ import annotations
 from typing import TypeAlias
 from abc import ABC, abstractmethod
-from attrs import field, frozen, evolve, define
+from attrs import field, frozen, evolve
 from meta_info import MetaInfo
 import helpers
 
@@ -208,3 +208,111 @@ class NamedApp(Named):
         return NamelessApp(meta_info=self.meta_info,
                            t1=nameless_t1,
                            t2=nameless_t2)
+
+
+# class for Builtin functions
+@frozen
+class BuiltinNameless(Nameless):
+    name: str = field(validator=helpers.not_none)
+    arity: int = field(default=0, validator=helpers.non_negative)
+    unlabeled_args: list[Nameless] = field(default=[])
+    labels: list[str] = field(default=[], validator=helpers.not_none)
+    labeled_args: dict[str, Nameless] = field(default={}, validator=helpers.not_none)
+
+    @unlabeled_args.validator
+    def _check_nameless_args(self, attribute, value):
+        assert len(value) <= self.arity
+    @labeled_args.validator
+    def _check_nameless_args(self, attribute, value):
+        assert helpers.is_subset(list(value.keys()), self.labels)
+
+    @abstractmethod
+    def reduce(self):
+        pass
+
+    def map_args(self, f):
+        unlabeled = [f(arg) for arg in self.unlabeled_args]
+        labeled = {label: f(arg) for label, arg in self.labeled_args.items()}
+        if all(t is None for t in unlabeled + list(labeled.values())):
+            return None
+        else:
+            return evolve(self, unlabeled_args=unlabeled, labeled_args=labeled)
+
+    def eval_or_none(self):
+        return self.map_args(lambda arg: arg.eval_or_none())
+
+    def shift(self, d, cutoff):
+        return self.map_args(lambda arg: arg.shift(d, cutoff))
+
+    def subst_or_none(self, num, term):
+        return self.map_args(lambda arg: arg.subst_or_none(num, term))
+
+    def recover_name_with_context(self, context, default_name='x'):
+        return BuiltinNamed(name=self.name,
+                            arity=self.arity,
+                            labels=self.labels)
+
+    def can_reduce(self):
+        return len(self.unlabeled_args) == self.arity and [self.labeled_args.key()].sort() == self.labels.sort()
+
+    def _apply_arg(self, term: Nameless) -> BuiltinNameless:
+        new_list = self.unlabeled_args + [term]
+        return evolve(self, unlabeled_args=new_list)
+
+    def apply_arg(self, term: Nameless) -> Nameless:
+        t = self._apply_arg(term)
+        if t.can_reduce():
+            return t.reduce()
+        else:
+            return t
+
+    def _apply_labeled_arg(self, label: str, term: Nameless) -> BuiltinNameless:
+        assert label in self.labels
+        assert label not in self.labeled_args.keys()
+        new_args = helpers.add_entry(self.labeled_args, label, term)
+        return evolve(self, labeled_args=new_args)
+
+    def apply_labeled_arg(self, label: str, term: Nameless) -> Nameless:
+        t = self._apply_labeled_arg(label, term)
+        if t.can_reduce():
+            return t.reduce()
+        else:
+            return t
+
+    def apply_args(self, unlabeled_args: list[Nameless], labeled_args: dict[str, Nameless]) -> Nameless:
+        assert len(unlabeled_args) == self.arity
+        assert [labeled_args.keys()].sort() == self.labels.sort()
+        t = self
+        for arg in unlabeled_args:
+            t = t._apply_arg(arg)
+        for label, arg in labeled_args:
+            t._apply_labeled_arg(label, arg)
+        assert t.can_reduce()
+        return t.reduce()
+
+
+@frozen
+class BuiltinNamed(Named):
+    name: str = field(validator=helpers.not_none)
+    arity: int = field(default=0, validator=helpers.non_negative)
+    unlabeled_args: list[Named] = field(default=[])
+    labels: list[str] = field(default=[], validator=helpers.not_none)
+    labeled_args: dict[str, Named] = field(default={}, validator=helpers.not_none)
+
+    def free_variables(self) -> set[str]:
+        f_vars_unlabeled = set().union(*{t.free_variables() for t in self.unlabeled_args})
+        f_vars_labeled = set().union(*{t.free_variables() for t in self.labeled_args.values()})
+        return f_vars_unlabeled.union(f_vars_labeled)
+
+    def remove_name_with_context(self, naming_context: list[str]) -> Nameless:
+        nameless_unlabeled_args = [t.remove_name_with_context(naming_context) for t in self.unlabeled_args]
+        nameless_labeled_args = {k: t.remove_name_with_context(naming_context) for k, t in self.labeled_args.items()}
+        return BuiltinNameless(
+            name=self.name,
+            arity=self.arity,
+            labels=self.labels,
+            unlabeled_args=nameless_unlabeled_args,
+            labeled_args=nameless_labeled_args
+        )
+
+
