@@ -116,14 +116,24 @@ class NamelessApp(Nameless):
         t2_eval = self.t2.eval_or_none()
         t1_prime = helpers.default(t1_eval, self.t1)
         t2_prime = helpers.default(t2_eval, self.t2)
-        if isinstance(t1_prime, NamelessAbs):
-            t2_shifted = self.t2.shift(1, 0)
-            t_substituted = self.t1.subst(0, t2_shifted)
-            return t_substituted.shift(-1, 0)
-        else:
-            if t1_eval is None and t2_eval is None:
-                return None
-            return evolve(self, t1=t1_prime, t2=t2_prime)
+        match t1_prime:
+            case NamelessAbs():
+                t2_shifted = t2_prime.shift(1, 0)
+                t_substituted = t1_prime.subst(0, t2_shifted)
+                return t_substituted.shift(-1, 0)
+            case BuiltinNameless():
+                t = t1_prime.apply_arg(t2_prime)
+                if t is None and t1_eval is None and t2_eval is None:
+                    return None
+                elif t is None:
+                    return evolve(self, t1=t1_prime, t2=t2_prime)
+                else:
+                    return t1_prime.apply_arg(t2_prime)
+            case _:
+                if t1_eval is None and t2_eval is None:
+                    return None
+                else:
+                    return evolve(self, t1=t1_prime, t2=t2_prime)
 
     def shift(self, d, c):
         return evolve(self, t1=self.t1.shift(d, c), t2=self.t2.shift(d, c))
@@ -214,23 +224,28 @@ class NamedApp(Named):
 @frozen
 class BuiltinNameless(Nameless):
     name: str = field(validator=helpers.not_none)
+    fun = field(validator=helpers.not_none)
     arity: int = field(default=0, validator=helpers.non_negative)
     unlabeled_args: list[Nameless] = field(default=[])
     labels: list[str] = field(default=[], validator=helpers.not_none)
     labeled_args: dict[str, Nameless] = field(default={}, validator=helpers.not_none)
 
+    @fun.validator
+    def _check_fun(self, attribute, value):
+        assert helpers.fun_with_arity_n(value, 2)
+
     @unlabeled_args.validator
     def _check_nameless_args(self, attribute, value):
         assert len(value) <= self.arity
+
     @labeled_args.validator
     def _check_nameless_args(self, attribute, value):
         assert helpers.is_subset(list(value.keys()), self.labels)
 
-    @abstractmethod
-    def reduce(self):
-        pass
+    def _reduce(self) -> Nameless:
+        return self.fun(self.unlabeled_args, self.labeled_args)
 
-    def map_args(self, f):
+    def _map_args(self, f) -> BuiltinNameless | None:
         unlabeled = [f(arg) for arg in self.unlabeled_args]
         labeled = {label: f(arg) for label, arg in self.labeled_args.items()}
         if all(t is None for t in unlabeled + list(labeled.values())):
@@ -238,21 +253,24 @@ class BuiltinNameless(Nameless):
         else:
             return evolve(self, unlabeled_args=unlabeled, labeled_args=labeled)
 
-    def eval_or_none(self):
-        return self.map_args(lambda arg: arg.eval_or_none())
+    def eval_or_none(self) -> Nameless | None:
+        return self._map_args(lambda arg: arg.eval_or_none())
 
-    def shift(self, d, cutoff):
-        return self.map_args(lambda arg: arg.shift(d, cutoff))
+    def shift(self, d, cutoff) -> BuiltinNameless:
+        return self._map_args(lambda arg: arg.shift(d, cutoff))
 
-    def subst_or_none(self, num, term):
-        return self.map_args(lambda arg: arg.subst_or_none(num, term))
+    def subst_or_none(self, num, term) -> BuiltinNameless | None:
+        return self._map_args(lambda arg: arg.subst_or_none(num, term))
 
-    def recover_name_with_context(self, context, default_name='x'):
+    def recover_name_with_context(self, context, default_name='x') -> BuiltinNamed:
         return BuiltinNamed(name=self.name,
+                            fun=self.fun,
                             arity=self.arity,
-                            labels=self.labels)
+                            unlabeled_args=self.unlabeled_args,
+                            labels=self.labels,
+                            labeled_args=self.labeled_args)
 
-    def can_reduce(self):
+    def _can_reduce(self):
         return len(self.unlabeled_args) == self.arity and [self.labeled_args.key()].sort() == self.labels.sort()
 
     def _apply_arg(self, term: Nameless) -> BuiltinNameless:
@@ -261,8 +279,8 @@ class BuiltinNameless(Nameless):
 
     def apply_arg(self, term: Nameless) -> Nameless:
         t = self._apply_arg(term)
-        if t.can_reduce():
-            return t.reduce()
+        if t._can_reduce():
+            return t._reduce()
         else:
             return t
 
@@ -272,14 +290,14 @@ class BuiltinNameless(Nameless):
         new_args = helpers.add_entry(self.labeled_args, label, term)
         return evolve(self, labeled_args=new_args)
 
-    def apply_labeled_arg(self, label: str, term: Nameless) -> Nameless:
+    def apply_labeled_arg(self, label: str, term: Nameless) -> Nameless | None:
         t = self._apply_labeled_arg(label, term)
-        if t.can_reduce():
-            return t.reduce()
+        if t._can_reduce():
+            return t._reduce()
         else:
             return t
 
-    def apply_args(self, unlabeled_args: list[Nameless], labeled_args: dict[str, Nameless]) -> Nameless:
+    def apply_args(self, unlabeled_args: list[Nameless], labeled_args: dict[str, Nameless]) -> Nameless | None:
         assert len(unlabeled_args) == self.arity
         assert [labeled_args.keys()].sort() == self.labels.sort()
         t = self
@@ -287,13 +305,14 @@ class BuiltinNameless(Nameless):
             t = t._apply_arg(arg)
         for label, arg in labeled_args:
             t._apply_labeled_arg(label, arg)
-        assert t.can_reduce()
-        return t.reduce()
+        assert t._can_reduce()
+        return t._reduce()
 
 
 @frozen
 class BuiltinNamed(Named):
     name: str = field(validator=helpers.not_none)
+    fun: any = field(validator=helpers.not_none),
     arity: int = field(default=0, validator=helpers.non_negative)
     unlabeled_args: list[Named] = field(default=[])
     labels: list[str] = field(default=[], validator=helpers.not_none)
@@ -309,10 +328,14 @@ class BuiltinNamed(Named):
         nameless_labeled_args = {k: t.remove_name_with_context(naming_context) for k, t in self.labeled_args.items()}
         return BuiltinNameless(
             name=self.name,
+            fun=self.fun,
             arity=self.arity,
             labels=self.labels,
             unlabeled_args=nameless_unlabeled_args,
             labeled_args=nameless_labeled_args
         )
+
+
+
 
 

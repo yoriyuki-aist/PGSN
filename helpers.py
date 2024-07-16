@@ -1,9 +1,21 @@
+from inspect import signature
+
 def not_none(instance, attribute, value):
     assert value is not None
 
 
 def non_negative(instance, attribute, value):
     assert value >= 0
+
+
+def fun_with_arity_n (f, n):
+    if not callable(f):
+        return False
+    sig = signature(f)
+    if len(sig.parameters) == n:
+        return True
+    else:
+        return False
 
 
 def default(x, default_value):
