@@ -177,6 +177,12 @@ class Named(Term):
 @frozen(order=True)
 class NamedVariable(Named):
     name: str = field(validator=helpers.not_none)
+    meta_info : MetaInfo
+
+    @classmethod
+    def from_name(cls, name, debug_info=None):
+        meta_info = MetaInfo(debug_info=debug_info, name_info=name)
+        return cls(name=name, meta_info=meta_info)
 
     def free_variables(self):
         return {self.name}

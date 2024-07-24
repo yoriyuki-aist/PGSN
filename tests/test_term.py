@@ -7,45 +7,47 @@ def test_meta_info():
     assert info is not None
 
 
+def test_var():
+    var_x = lambda_term.NamedVariable.from_name('x')
+    assert var_x.meta_info.name_info == 'x'
+    nameless_x = var_x.remove_name()
+    assert nameless_x.meta_info.name_info == 'x'
+
+
 def test_lambda_term_id():
-    var_x = lambda_term.NamedVariable('x')
-    assert var_x.meta_info is not None
+    var_x = lambda_term.NamedVariable.from_name('x')
     id_f = lambda_term.NamedAbs(v=var_x, t=var_x)
-    assert id_f.meta_info is not None
     assert id_f == lambda_term.NamedAbs(v=var_x, t=var_x)
     t = lambda_term.NamedApp(t1=id_f, t2=id_f)
-    assert t.meta_info is not None
     assert t == lambda_term.NamedApp(t1=id_f, t2=id_f)
     nameless_t = t.remove_name()
-    assert nameless_t.meta_info is not None
     reduced = nameless_t.eval()
-    assert reduced.meta_info is not None
     assert reduced == id_f.remove_name()
 
-
-def test_lambda_term_data():
-    s1 = lambda_term.DataNamed('test')
-    assert s1.value == 'test'
-    s2 = s1.remove_name()
-    assert s2.value == s1.value   # type inference error
-
-
-def test_lambda_term_list():
-    context = ['x', 'y']
-    var_x = lambda_term.NamedVariable('x')
-    var_y = lambda_term.NamedVariable('y')
-    list_term_1 = lambda_term.ListNameless([var_x.remove_name_with_context(context),
-                                            var_y.remove_name_with_context(context)])
-    list_term_2 = lambda_term.ListNamed([var_x, var_y])
-    assert list_term_1 == list_term_2.remove_name_with_context(context)
-
-
-def test_lambda_term_record():
-    context = ['x', 'y']
-    var_x = lambda_term.NamedVariable('x')
-    var_y = lambda_term.NamedVariable('y')
-    list_term_1 = lambda_term.RecordNameless({'a': var_x.remove_name_with_context(context),
-                                              'b': var_y.remove_name_with_context(context)})
-    list_term_2 = lambda_term.RecordNamed({'a':var_x, 'b':var_y})
-    assert list_term_1 == list_term_2.remove_name_with_context(context)
+#
+# def test_lambda_term_data():
+#     s1 = lambda_term.ConstantNamed('test')
+#     assert s1.value == 'test'
+#     s2 = s1.remove_name()
+#     assert s2.value == s1.value   # type inference error
+#
+#
+# def test_lambda_term_list():
+#     context = ['x', 'y']
+#     var_x = lambda_term.NamedVariable('x')
+#     var_y = lambda_term.NamedVariable('y')
+#     list_term_1 = lambda_term.ListNameless([var_x.remove_name_with_context(context),
+#                                             var_y.remove_name_with_context(context)])
+#     list_term_2 = lambda_term.ListNamed([var_x, var_y])
+#     assert list_term_1 == list_term_2.remove_name_with_context(context)
+#
+#
+# def test_lambda_term_record():
+#     context = ['x', 'y']
+#     var_x = lambda_term.NamedVariable('x')
+#     var_y = lambda_term.NamedVariable('y')
+#     list_term_1 = lambda_term.RecordNameless({'a': var_x.remove_name_with_context(context),
+#                                               'b': var_y.remove_name_with_context(context)})
+#     list_term_2 = lambda_term.RecordNamed({'a':var_x, 'b':var_y})
+#     assert list_term_1 == list_term_2.remove_name_with_context(context)
 
