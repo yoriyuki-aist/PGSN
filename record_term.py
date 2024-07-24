@@ -5,7 +5,7 @@ from lambda_term import Nameless, Named
 
 
 @frozen
-class RecordNameless(Nameless):
+class Record(Nameless):
     terms: dict[str, Nameless] = field(default={},
                                   validator=helpers.not_none)
 
@@ -14,7 +14,7 @@ class RecordNameless(Nameless):
         if all(t is None for t in evaluated.values()):
             return None
         else:
-            return evaluated
+            return evolve(self, terms=evaluated)
 
     def shift(self, d, c):
         shifted = {label: t.shift(d, c) for label, t in self.terms.items()}
@@ -25,10 +25,11 @@ class RecordNameless(Nameless):
         if all(t is None for t in subst.values()):
             return None
         else:
-            return subst
+            return evolve(self, terms=subst)
 
     def recover_name_with_context(self, context, default):
-        return RecordNamed({label: t.recover_name_with_context(context, default) for label, t in self.terms.items()})
+        return RecordNamed({label: t.recover_name_with_context(context, default) for label, t in self.terms.items()},
+                           meta_info=self.meta_info)
 
 
 @frozen
@@ -40,4 +41,5 @@ class RecordNamed(Named):
         return set().union(*{t.free_variables() for t in self.terms.values()})
 
     def remove_name_with_context(self, context):
-        return RecordNameless({label: t.remove_name_with_context(context) for label, t in self.terms.items()})
+        return Record({label: t.remove_name_with_context(context) for label, t in self.terms.items()},
+                      meta_info=self.meta_info)

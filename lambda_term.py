@@ -222,7 +222,7 @@ class NamedApp(Named):
 # Constants: any python data is okay
 @frozen
 class Constant(Nameless):
-    value: any = field(validator=helpers.not_none)
+    name: str = field(validator=helpers.not_none)
 
     def eval_or_none(self):
         return None
@@ -234,18 +234,18 @@ class Constant(Nameless):
         return None
 
     def recover_name_with_context(self, context, default_name='x'):
-        return ConstantNamed(value=self.value, meta_info=self.meta_info)
+        return ConstantNamed(name=self.name, meta_info=self.meta_info)
 
 
 @frozen
 class ConstantNamed(Named):
-    value: any = field(validator=helpers.not_none)
+    name: str = field(validator=helpers.not_none)
 
     def free_variables(self):
         return set()
 
     def remove_name_with_context(self, _):
-        return Constant(value=self.value, meta_info=self.meta_info)
+        return Constant(name=self.name, meta_info=self.meta_info)
 
 
 # Builtin functions.  Arity is always one.
