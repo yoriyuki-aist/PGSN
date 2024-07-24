@@ -5,8 +5,8 @@ from lambda_term import Nameless, Named
 
 
 @frozen
-class DataNameless(Nameless):
-    value: any = field(validator=helpers.not_none)
+class String(Nameless):
+    value: str = field(validator=helpers.not_none)
 
     def eval_or_none(self):
         return None
@@ -18,15 +18,15 @@ class DataNameless(Nameless):
         return None
 
     def recover_name_with_context(self, context, default_name='x'):
-        return DataNamed(self.value)
+        return StringNamed(self.value)
 
 
 @frozen
-class DataNamed(Named):
-    value: any = field(validator=helpers.not_none)
+class StringNamed(Named):
+    value: str = field(validator=helpers.not_none)
 
     def free_variables(self):
         return set()
 
     def remove_name_with_context(self, _):
-        return DataNameless(self.value)
+        return String(self.value)
