@@ -1,7 +1,7 @@
 from __future__ import annotations
 import helpers
 from attrs import field, frozen, evolve
-from lambda_term import Nameless, Named
+from lambda_term import Nameless, Named, Builtin, BuiltinNamed, App
 
 # Arbitrary Python data
 
@@ -9,7 +9,7 @@ from lambda_term import Nameless, Named
 # List
 
 @frozen
-class ListNameless(Nameless):
+class List(Nameless):
     terms: list[Nameless] = field(validator=helpers.not_none)
 
     def eval_or_none(self):
@@ -31,23 +31,20 @@ class ListNameless(Nameless):
             return subst
 
     def recover_name_with_context(self, context, default):
-        return ListNamed([t.recover_name_with_context(context, default) for t in self.terms])
+        return ListNamed(meta_info=self.meta_info,
+                         terms=[t.recover_name_with_context(context, default) for t in self.terms])
 
 
 @frozen
 class ListNamed(Named):
-    terms : list[Named] = field(default=[],
-                                validator=helpers.not_none)
+    terms: list[Named] = field(default=[],
+                               validator=helpers.not_none)
 
     def free_variables(self):
         return set().union(*{t.free_variables() for t in self.terms})
 
     def remove_name_with_context(self, context):
-        return ListNameless([t.remove_name_with_context(context) for t in self.terms])
+        return List(meta_info=self.meta_info, terms=[t.remove_name_with_context(context) for t in self.terms])
 
 
 # List functions
-
-
-
-

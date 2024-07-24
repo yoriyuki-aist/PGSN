@@ -251,7 +251,7 @@ class ConstantNamed(Named):
 # Builtin functions.  Arity is always one.
 @frozen
 class Builtin(Nameless):
-    name: str = field(validator=helpers.not_none)
+    name: str
 
     def eval_or_none(self) -> None:
         return None
@@ -276,10 +276,7 @@ class Builtin(Nameless):
 
 @frozen
 class BuiltinNamed(Named):
-    name: str = field(validator=helpers.not_none)
-    fun: any = field(validator=helpers.not_none),
-    arity: int = field(default=0, validator=helpers.non_negative)
-    args: list[Named] = field(default=[])
+    name: str
 
     def free_variables(self) -> set[str]:
         f_vars = set().union(*{t.free_variables() for t in self.args})
