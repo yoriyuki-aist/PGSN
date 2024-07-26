@@ -37,13 +37,6 @@ class Nameless(Term):
     def subst(self, variable:int, term: Nameless) -> Nameless:
         return helpers.default(self.subst_or_none(variable, term), self)
 
-    @abstractmethod
-    def recover_name_with_context(self, context: list[str], default_name) -> Named:
-        pass
-
-    def recover_name(self) -> Named:
-        return self.recover_name_with_context([], default_name='x')
-
 
 @frozen
 class Variable(Nameless):
@@ -117,9 +110,9 @@ class App(Nameless):
         t1_prime = helpers.default(t1_eval, self.t1)
         t2_prime = helpers.default(t2_eval, self.t2)
         match t1_prime:
-            case Abs():
+            case Abs(t):
                 t2_shifted = t2_prime.shift(1, 0)
-                t_substituted = t1_prime.subst(0, t2_shifted)
+                t_substituted = t.subst(0, t2_shifted)
                 return t_substituted.shift(-1, 0)
             case Builtin():
                 if t1_prime.applicable(t2_prime):
@@ -275,23 +268,6 @@ class Builtin(Nameless):
     @abstractmethod
     def apply_arg(self, arg: Nameless) -> Nameless:
         pass
-
-    def recover_name_with_context(self, context, default_name='x') -> BuiltinNamed:
-        return BuiltinNamed(name=self.name, meta_info=self.meta_info)
-
-
-@frozen
-class BuiltinNamed(Named):
-    name: str
-
-    def free_variables(self) -> set[str]:
-        f_vars = set().union(*{t.free_variables() for t in self.args})
-        return f_vars
-
-    def remove_name_with_context(self, naming_context: list[str]) -> Nameless:
-        nameless_args = [t.remove_name_with_context(naming_context) for t in self.args]
-        return Builtin(name=self.name, meta_info=self.meta_info)
-
 
 
 

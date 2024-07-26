@@ -24,6 +24,31 @@ def test_lambda_term_id():
     reduced = nameless_t.eval()
     assert reduced == id_f.remove_name()
 
+
+def test_lambda_term_const():
+    c = lambda_term.Constant('c')
+    var_x = lambda_term.NamedVariable.from_name('x')
+    id_f = lambda_term.NamedAbs(v=var_x, t=var_x).remove_name()
+    t = lambda_term.App(t1=id_f, t2=c)
+    assert t.eval() == c
+
+
+class Id(lambda_term.Builtin):
+    def applicable(self, _):
+        return True
+
+    def apply_arg(self, arg):
+        return arg
+
+
+def test_builtin():
+    id_f = Id('id')
+    c = lambda_term.Constant('c')
+    assert id_f.applicable(c)
+    assert id_f.apply_arg(c) == c
+    t = lambda_term.App(id_f, c)
+    assert t.eval() == c
+
 #
 # def test_lambda_term_data():
 #     s1 = lambda_term.ConstantNamed('test')
