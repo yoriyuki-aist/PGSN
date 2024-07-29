@@ -17,7 +17,8 @@ class List(Nameless):
         if all(t is None for t in evaluated):
             return None
         else:
-            return evolve(self, terms=evaluated)
+            evaluated_expanded = [y if x is None else x for x, y in zip(evaluated, self.terms)]
+            return evolve(self, terms=evaluated_expanded)
 
     def shift(self, d, c):
         shifted = [t.shift(d, c) for t in self.terms]
@@ -30,18 +31,14 @@ class List(Nameless):
         else:
             return subst
 
-    def recover_name_with_context(self, context, default):
-        return ListNamed(meta_info=self.meta_info,
-                         terms=[t.recover_name_with_context(context, default) for t in self.terms])
-
 
 @frozen
-class ListNamed(Named):
+class NamedList(Named):
     terms: list[Named] = field(default=[],
                                validator=helpers.not_none)
 
     def free_variables(self):
-        return set().union(*{t.free_variables() for t in self.terms})
+        return set().union(*[t.free_variables() for t in self.terms])
 
     def remove_name_with_context(self, context):
         return List(meta_info=self.meta_info, terms=[t.remove_name_with_context(context) for t in self.terms])

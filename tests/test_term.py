@@ -1,6 +1,8 @@
 import meta_info
 import lambda_term
 import string_term
+import list_term
+import record_term
 
 
 def test_meta_info():
@@ -55,6 +57,30 @@ def test_string():
     s = string_term.String('x')
     assert s.value == 'x'
 
+
+def test_list():
+    var_x = lambda_term.NamedVariable.from_name('x')
+    id_f = lambda_term.NamedAbs(v=var_x, t=var_x)
+    t = lambda_term.NamedApp(id_f, var_x)
+    ll = list_term.NamedList([var_x, id_f, t])
+    ll1 = ll.remove_name()
+    reduced = ll1.eval()
+    assert isinstance(reduced, list_term.List)
+    assert reduced.terms[0] == var_x.remove_name()
+    assert reduced.terms[1] == id_f.remove_name()
+    assert reduced.terms[2] == var_x.remove_name()
+
+
+def test_record():
+    var_x = lambda_term.NamedVariable.from_name('x')
+    id_f = lambda_term.NamedAbs(v=var_x, t=var_x)
+    t = lambda_term.NamedApp(id_f, var_x)
+    r = record_term.NamedRecord({'x': var_x, 'id_f': id_f, 't':t})
+    reduced = r.remove_name().eval()
+    assert isinstance(reduced, record_term.Record)
+    assert reduced.terms['x'] == var_x.remove_name()
+    assert reduced.terms['id_f'] == id_f.remove_name()
+    assert reduced.terms['t'] == var_x.remove_name()
 #
 # def test_lambda_term_data():
 #     s1 = lambda_term.ConstantNamed('test')

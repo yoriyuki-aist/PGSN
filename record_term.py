@@ -14,7 +14,8 @@ class Record(Nameless):
         if all(t is None for t in evaluated.values()):
             return None
         else:
-            return evolve(self, terms=evaluated)
+            evaluated_expand = {k: self.terms[k] if x is None else x for k, x in evaluated.items()}
+            return evolve(self, terms=evaluated_expand)
 
     def shift(self, d, c):
         shifted = {label: t.shift(d, c) for label, t in self.terms.items()}
@@ -27,18 +28,14 @@ class Record(Nameless):
         else:
             return evolve(self, terms=subst)
 
-    def recover_name_with_context(self, context, default):
-        return RecordNamed({label: t.recover_name_with_context(context, default) for label, t in self.terms.items()},
-                           meta_info=self.meta_info)
-
 
 @frozen
-class RecordNamed(Named):
+class NamedRecord(Named):
     terms: dict[str, Named] = field(default={},
                                validator=helpers.not_none)
 
     def free_variables(self):
-        return set().union(*{t.free_variables() for t in self.terms.values()})
+        return set().union(*(t.free_variables() for t in self.terms.values()))
 
     def remove_name_with_context(self, context):
         return Record({label: t.remove_name_with_context(context) for label, t in self.terms.items()},
