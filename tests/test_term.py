@@ -1,5 +1,6 @@
 import meta_info
 import lambda_term
+import string_term
 
 
 def test_meta_info():
@@ -48,6 +49,11 @@ def test_builtin():
     assert id_f.apply_arg(c) == c
     t = lambda_term.App(id_f, c)
     assert t.eval() == c
+
+
+def test_string():
+    s = string_term.String('x')
+    assert s.value == 'x'
 
 #
 # def test_lambda_term_data():
