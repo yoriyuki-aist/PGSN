@@ -83,20 +83,12 @@ class Abs(Nameless):
         return evolve(self, t=self.t.shift(d, c+1))
 
     def subst_or_none(self, var, term):
-        term_shifted = term.shift(-1, 0)
-        substituted = self.t.subst_or_none(var+1, term_shifted)
+        term_shifted = term.shift(1, 0)
+        substituted = self.t.subst_or_none(var, term_shifted)
         if substituted is None:
             return None
         else:
             return evolve(self, t=substituted)
-
-    def recover_name_with_context(self, context, default_name='x'):
-        name = helpers.default(self.meta_info.name_info, default_name)
-        new_context = [name] + context
-        named_term = self.t.recover_name_with_context(context=new_context,
-                                                      default_name=default_name)
-        named_variable = NamedVariable(name)
-        return NamedAbs(meta_info=self.meta_info, v=named_variable, t=named_term)
 
 
 @frozen
@@ -109,24 +101,17 @@ class App(Nameless):
         t2_eval = self.t2.eval_or_none()
         t1_prime = helpers.default(t1_eval, self.t1)
         t2_prime = helpers.default(t2_eval, self.t2)
-        match t1_prime:
-            case Abs(t):
-                t2_shifted = t2_prime.shift(1, 0)
-                t_substituted = t.subst(0, t2_shifted)
-                return t_substituted.shift(-1, 0)
-            case Builtin():
-                if t1_prime.applicable(t2_prime):
-                    t = t1_prime.apply_arg(t2_prime)
-                    return t
-                elif t1_eval is None and t2_eval is None:
-                    return None
-                else:
-                    return evolve(self, t1=t1_prime, t2=t2_prime)
-            case _:
-                if t1_eval is None and t2_eval is None:
-                    return None
-                else:
-                    return evolve(self, t1=t1_prime, t2=t2_prime)
+        if isinstance(t1_prime, Abs):
+            t_substituted = t1_prime.t.subst(0, t2_prime.shift(1, 0))
+            return t_substituted.shift(-1, 0)
+        elif isinstance(t1_prime, Builtin) and t1_prime.applicable(t2_prime):
+            t = t1_prime.apply_arg(t2_prime)
+            return t
+        else:
+            if t1_eval is None and t2_eval is None:
+                return None
+            else:
+                return evolve(self, t1=t1_prime, t2=t2_prime)
 
     def shift(self, d, c):
         return evolve(self, t1=self.t1.shift(d, c), t2=self.t2.shift(d, c))
@@ -138,11 +123,6 @@ class App(Nameless):
             return None
         else:
             return evolve(self, t1=self.t1.subst(var, term), t2=self.t2.subst(var, term))
-
-    def recover_name_with_context(self, context, default_name='x'):
-        named_t1 = self.t1.recover_name_with_context(context, default_name)
-        named_t2 = self.t2.recover_name_with_context(context, default_name)
-        return NamedApp(meta_info=self.meta_info, t1=named_t1, t2=named_t2)
 
 
 @frozen(kw_only=True)
@@ -266,9 +246,12 @@ class Builtin(Nameless):
         pass
 
     @abstractmethod
-    def apply_arg(self, arg: Nameless) -> Nameless:
+    def _apply_arg(self, arg: Nameless) -> Nameless:
         pass
 
+    def apply_arg(self, arg: Nameless) -> Nameless:
+        assert self.applicable(arg)
+        return self._apply_arg(arg)
 
 
 

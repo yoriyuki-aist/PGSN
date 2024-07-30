@@ -1,31 +1,36 @@
 from __future__ import annotations
 import helpers
+from typing import Any
 from attrs import field, frozen, evolve
 from lambda_term import Nameless, Named, Constant, Builtin, Abs, App
 from record_term import Record
 from list_term import List
+from string_term import String
+
+
+def check_type_list(arg: Nameless, types: list):
+    if not isinstance(arg, List):
+        return False
+    return helpers.check_type_list(arg.terms, types)
+
+
+def check_type_dict(arg: Nameless, types: dict):
+    if not isinstance(arg, Record):
+        return False
+    return helpers.check_type_list(arg.terms, types)
 
 
 # List related
-
-empty_list = Constant(name='empty_list')
+empty_list = List(terms=[])
 
 
 @frozen
 class AddHead(Builtin):
 
-    def applicable(self, arg):
-        if not isinstance(arg, List):
-            return False
-        if not len(arg.terms) == 2:
-            return False
-        if not isinstance(arg.terms[1], List):
-            return False
-        return True
+    def applicable(self, arg: Nameless):
+        return check_type_list(arg, [Nameless, List])
 
-    def apply_arg(self, arg: List):
-        assert isinstance(arg.terms[1], List)
-        assert hasattr(arg.terms[1], 'terms')
+    def _apply_arg(self, arg: List) -> List:
         added = [arg.terms[0]] + arg.terms[1].terms
         return List(terms=added)
 
@@ -36,22 +41,23 @@ add_head = AddHead(name='list.add_head')
 @frozen
 class Head(Builtin):
 
-    def applicable(self, arg: List):
-        return len(arg.terms) >= 1
+    def applicable(self, arg: Nameless):
+        return isinstance(arg, List) and len(arg.terms) >= 1
 
-    def apply_arg(self, arg: List):
+    def _apply_arg(self, arg: List) -> Nameless:
         return arg.terms[0]
 
 
 head = Head(name='list.head')
 
 
+@frozen
 class Tail(Builtin):
 
-    def applicable(self, arg: List):
-        return len(arg.terms) >= 1
+    def applicable(self, arg: Nameless):
+        return isinstance(arg, List) and len(arg.terms) >= 1
 
-    def apply_arg(self, arg: List):
+    def _apply_arg(self, arg: List) -> List:
         return List(terms=arg.terms[1:])
 
 
@@ -59,15 +65,30 @@ tail = Tail(name='list.tail')
 
 
 @frozen
+class Indexing(Builtin):
+
+    def applicable(self, arg: Nameless):
+        if not check_type_list(arg, [List, String]):
+            return False
+        if not str.isdigit(arg.terms[1].value):
+            return False
+        return True
+
+    def _apply_arg(self, arg:List) -> Nameless:
+        index = int(arg.terms[1].value)
+        return arg.terms[0].terms[index]
+
+
+indexing = Indexing(name='list.indexing')
+
+
+@frozen
 class Fold(Builtin):
 
-    def applicable(self, arg: Record):
-        args = arg.terms
-        if not('fun' in args and 'init' in args and 'list' in args):
-            return False
-        return isinstance(args['list'], List)
+    def applicable(self, arg: Nameless):
+        return check_type_dict(arg, {'fun': Any, 'init': Any, 'list': List})
 
-    def apply_arg(self, arg: Record):
+    def _apply_arg(self, arg: Record) -> Nameless:
         fun = arg.terms['fun']
         init = arg.terms['init']
         arg_list = arg.terms['list'].terms

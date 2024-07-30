@@ -40,7 +40,7 @@ class Id(lambda_term.Builtin):
     def applicable(self, _):
         return True
 
-    def apply_arg(self, arg):
+    def _apply_arg(self, arg):
         return arg
 
 

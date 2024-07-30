@@ -39,3 +39,28 @@ def del_entry(d, k, v):
     d1 = d.copy()
     del d1[k]
     return d1
+
+
+def check_type_list(x, types):
+    if not type(x) is list:
+        return False
+    if not len(x) == len(types):
+        return False
+    for y, c in zip(x, types):
+        if not isinstance(y, c):
+            return False
+    return True
+
+
+def check_type_dict(x, types):
+    if not type(x) is dict:
+        return False
+    if not set(x.keys()) == set(types.keys()):
+        return False
+    for k in types.keys():
+        if not isinstance(x[k], types[k]):
+            return False
+    return True
+
+
+
