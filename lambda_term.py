@@ -24,7 +24,8 @@ class Nameless(Term):
         pass
 
     def eval(self) -> Named:
-        return helpers.default(self.eval_or_none(), self)
+        evaluated = helpers.default(self.eval_or_none(), self)
+        return evaluated
 
     @abstractmethod
     def shift(self, num: int, cutoff: int) -> Nameless:
@@ -35,12 +36,13 @@ class Nameless(Term):
         pass
 
     def subst(self, variable:int, term: Nameless) -> Nameless:
-        return helpers.default(self.subst_or_none(variable, term), self)
+        substituted_or_none = self.subst_or_none(variable, term)
+        substituted = helpers.default(substituted_or_none,  self)
+        return substituted
 
 
 @frozen
 class Variable(Nameless):
-    __match_args__ = ('num',)
     num: int = field(validator=helpers.non_negative)
 
     def eval_or_none(self):
@@ -52,7 +54,7 @@ class Variable(Nameless):
         else:
             return evolve(self, num=self.num+d)
 
-    def subst_or_none(self, num, term):
+    def subst_or_none(self, num, term) -> Variable | None:
         if self.num == num:
             return term
         else:
@@ -82,7 +84,7 @@ class Abs(Nameless):
     def shift(self, d, c):
         return evolve(self, t=self.t.shift(d, c+1))
 
-    def subst_or_none(self, var, term):
+    def subst_or_none(self, var, term) -> Abs | None:
         term_shifted = term.shift(1, 0)
         substituted = self.t.subst_or_none(var, term_shifted)
         if substituted is None:
@@ -116,7 +118,7 @@ class App(Nameless):
     def shift(self, d, c):
         return evolve(self, t1=self.t1.shift(d, c), t2=self.t2.shift(d, c))
 
-    def subst_or_none(self, var, term):
+    def subst_or_none(self, var, term) -> App | None:
         t1_subst = self.t1.subst(var, term)
         t2_subst = self.t2.subst(var, term)
         if t1_subst is None and t2_subst is None:

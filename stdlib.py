@@ -65,21 +65,24 @@ tail = Tail(name='list.tail')
 
 
 @frozen
-class Indexing(Builtin):
+class Index(Builtin):
 
     def applicable(self, arg: Nameless):
         if not check_type_list(arg, [List, String]):
             return False
         if not str.isdigit(arg.terms[1].value):
             return False
+        i = int(arg.terms[1].value)
+        if not (0 <= i < len(arg.terms[0].terms)):
+            return False
         return True
 
     def _apply_arg(self, arg:List) -> Nameless:
-        index = int(arg.terms[1].value)
-        return arg.terms[0].terms[index]
+        i = int(arg.terms[1].value)
+        return arg.terms[0].terms[i]
 
 
-indexing = Indexing(name='list.indexing')
+index = Index(name='list.indexing')
 
 
 @frozen
