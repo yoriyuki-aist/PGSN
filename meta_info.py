@@ -5,6 +5,9 @@ from attrs import field, frozen, evolve, define
 
 @frozen
 class MetaInfo:
-    debug_info: DebugInfo = None
-    name_info: str = None
+    debug_info: DebugInfo = field(default=None)
+    name_info: str = field(default=None)
+
+
+empty = MetaInfo()
 

@@ -3,6 +3,7 @@ from typing import TypeAlias
 from abc import ABC, abstractmethod
 from attrs import field, frozen, evolve
 from meta_info import MetaInfo
+import meta_info as meta
 import helpers
 
 Term: TypeAlias = "Term"
@@ -10,68 +11,201 @@ Named: TypeAlias = "Named"
 Nameless: TypeAlias = "Nameless"
 
 
+def naming_context(names: set[str]) -> list[str]:
+    return sorted(list(names))
+
+
 @frozen(kw_only=True)
 class Term(ABC):
     # meta_info is always not empty
     meta_info: MetaInfo = field(default=MetaInfo(), eq=False)
+    named: bool = field()
 
-
-@frozen(kw_only=True)
-class Nameless(Term):
-
+    @classmethod
     @abstractmethod
-    def eval_or_none(self) -> Nameless | None:
+    def _nameless_term(cls, *kwarg):
         pass
 
-    def eval(self) -> Named:
+    @classmethod
+    def nameless_term(cls, *kwarg):
+        obj = cls._nameless_term(*kwarg)
+        obj.named = False
+        return obj
+
+    @classmethod
+    @abstractmethod
+    def _named_term(cls, *kwarg):
+        pass
+
+    @classmethod
+    def named_term(cls, *kwarg):
+        obj = cls._named_term(*kwarg)
+        obj.named = True
+        return obj
+
+    @abstractmethod
+    def evolve(self, *kwarg):
+        pass
+
+    @named.validator
+    @abstractmethod
+    def _named_validator(self, attribute, value):
+        pass
+
+    @abstractmethod
+    def _eval_or_none(self) -> Term | None:
+        pass
+
+    def eval_or_none(self) -> Term | None:
+        assert not self.named
+        evaluated = self._eval_or_none()
+        assert (evaluated is None) or (not evaluated.named)
+        return evaluated
+
+    def eval(self) -> Term:
         evaluated = helpers.default(self.eval_or_none(), self)
         return evaluated
 
     @abstractmethod
-    def shift(self, num: int, cutoff: int) -> Nameless:
+    def _shift(self, num: int, cutoff: int) -> Term:
         pass
+
+    def shift(self, num: int, cutoff: int) -> Term:
+        assert not self.named
+        shifted = self._shift(num, cutoff)
+        assert not shifted.named
+        return shifted
 
     @abstractmethod
-    def subst_or_none(self, variable: int, term: Nameless) -> Nameless | None:
+    def _subst_or_none(self, variable: int, term: Term) -> Term | None:
         pass
 
-    def subst(self, variable:int, term: Nameless) -> Nameless:
+    def subst_or_none(self, variable: int, term: Term) -> Term | None:
+        assert not self.named
+        assert not term.named
+        substituted = self._subst_or_none(variable, term)
+        assert not substituted.named
+        return substituted
+
+    def subst(self, variable:int, term: Term) -> Term:
         substituted_or_none = self.subst_or_none(variable, term)
         substituted = helpers.default(substituted_or_none,  self)
         return substituted
 
+    @abstractmethod
+    def _free_variables(self) -> set[str]:
+        pass
+
+    def free_variables(self) -> set[str]:
+        assert self.named
+        return self.free_variables()
+
+    @abstractmethod
+    def _remove_name_with_context(self, context: list[str]) -> Term:
+        pass
+
+    def remove_name_with_context(self, context: list[str]) -> Term:
+        assert self.named
+        nameless = self._remove_name_with_context(context)
+        assert not nameless.named
+        return nameless
+
+    def my_naming_context(self) -> list[str]:
+        assert self.named
+        return naming_context(self.free_variables())
+
+    def remove_name(self) -> Term:
+        assert self.named
+        return self.remove_name_with_context(self.my_naming_context())
+
 
 @frozen
-class Variable(Nameless):
-    num: int = field(validator=helpers.non_negative)
+class Variable(Term):
+    num: int | None = field()
+    name: str | None = field()
+    named: bool = field()
 
-    def eval_or_none(self):
+    @classmethod
+    def _nameless_term(cls, num=None, meta_info=meta.empty):
+        assert num is not None
+        return Variable(num=num, name=None, meta_info=meta_info, named=False)
+
+    @classmethod
+    def _named_term(cls, name=None, meta_info=meta.empty):
+        assert name is not None
+        return Variable(num=None, name=name, named=False, meta_info=meta_info)
+
+    def evolve(self, num: int = None, name: str = None):
+        if num is None and name is not None and self.named:
+            assert self.num is None and self.name is not None
+            return evolve(self, name=name)
+        if num is not None and name is None and not self.name:
+            assert self.num is not None and self.name is None
+            return evolve(self, num=num)
+        else:
+            assert False
+
+    def _named_validator(self, attribute, value):
+        if value:
+            assert self.num is None and self.name is not None
+        else:
+            assert self.num is not None and self.name is None
+
+    def _free_variables(self) -> set[str]:
+        return {self.name}
+
+    def _eval_or_none(self):
         return None
 
-    def shift(self, d, cutoff):
+    def _shift(self, d, cutoff):
         if self.num < cutoff:
             return self
         else:
             return evolve(self, num=self.num+d)
 
-    def subst_or_none(self, num, term) -> Variable | None:
+    def _subst_or_none(self, num, term) -> Nameless | None:
         if self.num == num:
             return term
         else:
             return None
 
-    def recover_name_with_context(self, context, default_name='x'):
-        if 0 <= self.num < len(context):
-            return NamedVariable(meta_info=self.meta_info,
-                                 name=context[self.num])
-        else:
-            name = helpers.default(self.meta_info.name_info, default_name)
-            return NamedVariable(meta_info=self.meta_info,
-                                 name=f"{name}_{self.num}")
+    def _remove_name_with_context(self, context: list[str]) -> Term:
+        meta_info = evolve(self.meta_info, name_info=self.name)
+        num = context.index(self.name)
+        return Variable.nameless_term(num=num, meta_info=self.meta_info)
 
 
 @frozen
-class Abs(Nameless):
+class Abs(Term):
+    @classmethod
+    def _nameless_term(cls, *kwarg):
+        pass
+
+    @classmethod
+    def _named_term(cls, *kwarg):
+        pass
+
+    def evolve(self, *kwarg):
+        pass
+
+    def _named_validator(self, attribute, value):
+        pass
+
+    def _eval_or_none(self) -> Term | None:
+        pass
+
+    def _shift(self, num: int, cutoff: int) -> Term:
+        pass
+
+    def _subst_or_none(self, variable: int, term: Term) -> Term | None:
+        pass
+
+    def _free_variables(self) -> set[str]:
+        pass
+
+    def _remove_name_with_context(self, context: list[str]) -> Term:
+        pass
+
     t: Nameless = field(validator=helpers.not_none)
 
     def eval_or_none(self):
@@ -215,12 +349,16 @@ class Constant(Nameless):
         return None
 
     def recover_name_with_context(self, context, default_name='x'):
-        return ConstantNamed(name=self.name, meta_info=self.meta_info)
+        return NamedConstant(name=self.name, meta_info=self.meta_info)
 
 
 @frozen
-class ConstantNamed(Named):
+class NamedConstant(Named):
     name: str = field(validator=helpers.not_none)
+
+    @classmethod
+    def from_nameless(cls, const: Constant):
+        return cls(name=const.name)
 
     def free_variables(self):
         return set()
@@ -254,6 +392,21 @@ class Builtin(Nameless):
     def apply_arg(self, arg: Nameless) -> Nameless:
         assert self.applicable(arg)
         return self._apply_arg(arg)
+
+
+@frozen
+class NamedBuiltin(Named):
+    name: str = field(validator=helpers.not_none)
+
+    @classmethod
+    def from_nameless(cls, builtin: Builtin):
+        cls(name=builtin.name)
+
+    def free_variables(self):
+        return set()
+
+    def remove_name_with_context(self, _):
+        return Builtin(name=self.name, meta_info=self.meta_info)
 
 
 
