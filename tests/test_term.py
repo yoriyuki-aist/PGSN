@@ -36,7 +36,7 @@ def test_lambda_term_const():
     assert t.eval() == c
 
 
-class Id(lambda_term.Builtin):
+class Id(lambda_term.BuiltinFunction):
     def _applicable(self, _):
         return True
 

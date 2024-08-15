@@ -36,6 +36,7 @@ class Term(ABC):
     @abstractmethod
     def named(cls, meta_info=meta.empty, *kwarg) -> Term:
         pass
+
     @abstractmethod
     def evolve(self, *kwarg):
         pass
@@ -178,7 +179,6 @@ class Abs(Term):
     def __attr_post_init__(self):
         assert self.v.is_named == self.t.is_named
 
-
     def evolve(self, t: Term, v: Variable | None = None):
         if v is None and not t.is_named:
             return evolve(self, v=v, t=t, is_named=False)
@@ -237,7 +237,6 @@ class App(Term):
         else:
             assert False
 
-
     def __attr_post_init__(self):
         assert self.t1.is_named == self.t2.is_named
 
@@ -257,7 +256,7 @@ class App(Term):
         if isinstance(t1_prime, Abs):
             t_substituted = t1_prime.t.subst(0, t2_prime.shift(1, 0))
             return t_substituted.shift(-1, 0)
-        elif isinstance(t1_prime, Builtin) and t1_prime.applicable(t2_prime):
+        elif isinstance(t1_prime, BuiltinFunction) and t1_prime.applicable(t2_prime):
             t = t1_prime.apply_arg(t2_prime)
             return t
         else:
@@ -286,9 +285,29 @@ class App(Term):
         return self.evolve(t1=nameless_t1, t2=nameless_t2)
 
 
-# Constants: any python data is okay
+class Builtin(Term):
+
+    @abstractmethod
+    def _applicable(self, arg: Term) -> bool:
+        pass
+
+    def applicable(self, arg: Term) -> bool:
+        if self.is_named or arg.is_named:
+            return False
+        else:
+            return self._applicable(arg)
+
+    @abstractmethod
+    def _apply_arg(self, arg: Term) -> Term:
+        pass
+
+    def apply_arg(self, arg: Term) -> Term:
+        assert self.applicable(arg)
+        return self._apply_arg(arg)
+
+
 @frozen
-class Constant(Term):
+class Constant(Builtin):
     name: str = field(validator=helpers.not_none)
 
     @classmethod
@@ -317,10 +336,16 @@ class Constant(Term):
     def _remove_name_with_context(self, context: list[str]) -> Term:
         return evolve(self, is_named=False)
 
+    def _applicable(self, term):
+        return False
+
+    def _apply_arg(self, term):
+        assert False
+
 
 # Builtin functions.  Arity is always one.
 @frozen
-class Builtin(Term):
+class BuiltinFunction(Builtin):
     name: str = field(validator=helpers.not_none)
 
     @classmethod
@@ -337,7 +362,7 @@ class Builtin(Term):
     def _eval_or_none(self) -> None:
         return None
 
-    def _shift(self, d, cutoff) -> Builtin:
+    def _shift(self, d, cutoff) -> BuiltinFunction:
         return self
 
     def _subst_or_none(self, num, term) -> None:
@@ -347,19 +372,9 @@ class Builtin(Term):
     def _applicable(self, arg: Term) -> bool:
         pass
 
-    def applicable(self, arg: Term) -> bool:
-        if self.is_named or arg.is_named:
-            return False
-        else:
-            return self._applicable(arg)
-
     @abstractmethod
     def _apply_arg(self, arg: Term) -> Term:
         pass
-
-    def apply_arg(self, arg: Term) -> Term:
-        assert self.applicable(arg)
-        return self._apply_arg(arg)
 
     def _free_variables(self) -> set[str]:
         return set()
