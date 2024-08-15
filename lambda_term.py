@@ -256,7 +256,7 @@ class App(Term):
         if isinstance(t1_prime, Abs):
             t_substituted = t1_prime.t.subst(0, t2_prime.shift(1, 0))
             return t_substituted.shift(-1, 0)
-        elif isinstance(t1_prime, BuiltinFunction) and t1_prime.applicable(t2_prime):
+        elif isinstance(t1_prime, Builtin) and t1_prime.applicable(t2_prime):
             t = t1_prime.apply_arg(t2_prime)
             return t
         else:
