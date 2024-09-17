@@ -17,17 +17,17 @@ class List(Builtin):
     terms: tuple[Term] = field(validator=helpers.not_none)
 
     @classmethod
-    def nameless(cls, terms: Iterable[Term] = terms, meta_info: MetaInfo = meta.empty):
+    def nameless(cls, terms: Iterable[Term] = tuple(), meta_info: MetaInfo = meta.empty):
         assert all((not t.is_named for t in terms))
         return List(terms=tuple(terms), is_named=False)
 
     @classmethod
-    def named(cls, terms: Iterable[Term] = terms, meta_info: MetaInfo = meta.empty):
+    def named(cls, terms: Iterable[Term] = tuple(), meta_info: MetaInfo = meta.empty):
         assert all((t.is_named for t in terms))
         return List(terms=tuple(terms), is_named=True)
 
     def __attr_post_init__(self):
-        assert len(self.terms) == 0 or all((t == self.terms[0].is_named for t in self.terms))
+        assert len(self.terms) == 0 or all((t == self.is_named for t in self.terms))
 
     def evolve(self, terms):
         assert len(terms) == 0 or all((t == terms[0].is_named for t in terms))
@@ -69,4 +69,4 @@ class List(Builtin):
 
 # Constant
 empty_nameless = List.nameless([])
-empty_named = List.named([])
+empty = List.named([])
