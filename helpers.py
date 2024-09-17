@@ -64,4 +64,19 @@ def check_type_dict(x, types):
     return True
 
 
+def query(d: tuple[tuple[str, any]], key: str):
+    for item in d:
+        if item[0] == key:
+            return d[1]
+    raise KeyError
+
+
+def contains(key: str, d: tuple[tuple[str, any]]):
+    for item in d:
+        if item[0] == key:
+            return True
+    raise False
+
+
+
 
