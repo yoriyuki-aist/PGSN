@@ -1,14 +1,14 @@
 from __future__ import annotations
 import helpers
 from attrs import field, frozen, evolve
-from lambda_term import Term
+from lambda_term import Term, Builtin
 import meta_info as meta
 from meta_info import MetaInfo
 from data_term import String
 
 
 @frozen
-class Record(Term):
+class Record(Builtin):
     terms: tuple[tuple[str, Term]] = \
         field(default=tuple(), validator=helpers.not_none)
 
