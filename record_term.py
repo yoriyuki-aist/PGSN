@@ -56,11 +56,10 @@ class Record(Builtin):
         return evolve(self, terms=terms)
 
     def _applicable(self, term):
-        return isinstance(term, String) and helpers.contains(term.value, self.terms)
+        return False
 
-    def _apply_arg(self, term):
-        assert isinstance(term, String) and helpers.contains(term.value, self.terms)
-        return helpers.query(self.terms, term.value)
+    def _apply_args(self, term):
+        assert False
 
 
 empty = Record.named(tuple())

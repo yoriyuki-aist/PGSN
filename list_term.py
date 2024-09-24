@@ -59,13 +59,10 @@ class List(Builtin):
     def _remove_name_with_context(self, context):
         return List.nameless(meta_info=self.meta_info, terms=[t.remove_name_with_context(context) for t in self.terms])
 
-    def _applicable(self, term):
-        return isinstance(term, Integer) and 0 <= term.value < len(self.terms)
-
-    def _apply_arg(self, term):
-        assert isinstance(term, Integer) and 0 <= term.value < len(self.terms)
-        return self.terms[term.value]
-
+    def _applicable(self, terms):
+        return False
+    def _apply_args(self, terms):
+        assert False
 
 # Constant
 empty_nameless = List.nameless([])

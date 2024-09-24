@@ -37,18 +37,18 @@ def test_lambda_term_const():
 
 
 class Id(lambda_term.BuiltinFunction):
-    def _applicable(self, _):
-        return True
+    def _applicable(self, args):
+        return len(args) == 1
 
-    def _apply_arg(self, arg):
-        return arg
+    def _apply_args(self, args):
+        return args[0]
 
 
 def test_builtin():
     id_f = Id.nameless('id')
     c = lambda_term.Constant.nameless('c')
-    assert id_f.applicable(c)
-    assert id_f.apply_arg(c) == c
+    assert id_f.applicable((c,))
+    assert id_f.apply_args((c,)) == c
     t = lambda_term.App.nameless(id_f, c)
     assert t.eval() == c
     assert id_f(c).eval() == c

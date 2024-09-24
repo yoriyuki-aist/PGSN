@@ -5,13 +5,13 @@ import helpers
 from attrs import field, frozen, evolve
 from meta_info import MetaInfo
 import meta_info as meta
-from lambda_term import Term
+from lambda_term import Term, Constant, Builtin
 
 T = TypeVar('T')
 
 
 @frozen
-class Data(Term, Generic[T], ABC):
+class Data(Builtin, Generic[T], ABC):
     value: T = field(validator=helpers.not_none)
 
     @classmethod
@@ -36,6 +36,12 @@ class Data(Term, Generic[T], ABC):
 
     def _remove_name_with_context(self, _):
         return type(self).nameless(self.value)
+
+    def _applicable(self, _):
+        return False
+
+    def _apply_args(self, _):
+        assert False
 
 
 class String(Data[str]):

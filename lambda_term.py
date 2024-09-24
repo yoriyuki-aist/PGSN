@@ -41,18 +41,20 @@ class Term(ABC):
     def evolve(self, *kwarg):
         pass
 
+    # Only application becomes closure, otherwise None
     @abstractmethod
-    def _eval_or_none(self) -> Term | None:
+    def _eval_or_none(self):
         pass
 
-    def eval_or_none(self) -> Term | None:
+    def eval_or_none(self):
         assert not self.is_named
         evaluated = self._eval_or_none()
         assert (evaluated is None) or (not evaluated.is_named)
         return evaluated
-
+    # If None is returned, the reduction is terminated.
     def eval(self) -> Term:
         evaluated = helpers.default(self.eval_or_none(), self)
+        assert(not evaluated.is_named)
         return evaluated
 
     @abstractmethod
@@ -188,8 +190,7 @@ class Abs(Term):
             assert False
 
     def _eval_or_none(self) -> Term | None:
-        assert not self.is_named
-        t_evaluated = self.t.eval()
+        t_evaluated = self.t.eval_or_none()
         return None if t_evaluated is None else self.evolve(t=t_evaluated)
 
     def _shift(self, num: int, cutoff: int) -> Term:
@@ -248,22 +249,22 @@ class App(Term):
         else:
             assert False
 
-    def _eval_or_none(self) -> Term | None:
-        t1_eval = self.t1.eval_or_none()
-        t2_eval = self.t2.eval_or_none()
-        t1_prime = helpers.default(t1_eval, self.t1)
-        t2_prime = helpers.default(t2_eval, self.t2)
-        if isinstance(t1_prime, Abs):
-            t_substituted = t1_prime.t.subst(0, t2_prime.shift(1, 0))
-            return t_substituted.shift(-1, 0)
-        elif isinstance(t1_prime, Builtin) and t1_prime.applicable(t2_prime):
-            t = t1_prime.apply_arg(t2_prime)
-            return t
+    def to_closure(self) -> Closure:
+        if isinstance(self.t1, App):
+            return self.t1.to_closure().stack(self.t2)
         else:
-            if t1_eval is None and t2_eval is None:
-                return None
-            else:
-                return self.evolve(t1=t1_prime, t2=t2_prime)
+            return Closure(head=self.t1, args=(self.t2,))
+
+    def _eval_or_none(self):
+        if isinstance(self.t1, App):
+            c = self.t1.to_closure().stack(self.t2)
+        else:
+            c = Closure(head=self.t1, args=(self.t2,))
+        c_reduced = c.reduce_or_none()
+        if c_reduced is None:
+            return None
+        else:
+            return c_reduced.to_term()
 
     def _shift(self, num: int, cutoff: int) -> Term:
         return self.evolve(t1=self.t1.shift(num, cutoff), t2=self.t2.shift(num, cutoff))
@@ -285,25 +286,73 @@ class App(Term):
         return self.evolve(t1=nameless_t1, t2=nameless_t2)
 
 
+# leftmost, outermost reduction
+@frozen
+class Closure:
+    head: Term = field(validator=helpers.not_none)
+    args: tuple[Term] = field(default=(), validator=helpers.not_none)
+
+    @classmethod
+    def build(cls, head, args):
+        if isinstance(head, App):
+            return cls.build(head=head.t1, args=(head.t2,) + args)
+
+    def evolve(self, head=None, args=None):
+        if head is None:
+            head = self.head
+        if args is None:
+            args = self.args
+        return Closure(head=head, args=args)
+
+    def to_term(self) -> Term:
+        term = self.head
+        for arg in self.args:
+            term = App.nameless(term, arg)
+        return term
+
+    def stack(self, arg: Term):
+        return self.evolve(args=self.args + (arg, ))
+
+    # If None is returned, the reduction is terminated.
+    def reduce_or_none(self) -> Closure | None:
+        head_reduced = self.head.eval_or_none()
+        if head_reduced is not None:
+            return evolve(self, head=head_reduced)
+        if len(self.args) == 0:
+            return None
+        if isinstance(self.head, Abs):
+            head_substituted = self.head.t.subst(0, self.args[0].shift(1, 0))
+            return self.evolve(head=head_substituted, args=self.args[1:])
+        if isinstance(self.head, Builtin):
+            if self.head.applicable(self.args):
+                reduced = self.head.apply_args(self.args)
+                return self.evolve(head=reduced, args=tuple())
+        else:
+            for i in range(len(self.args)):
+                arg_reduced = self.args[i].eval_or_none()
+                if arg_reduced is not None:
+                    new_args = self.args[0:i-1] + (arg_reduced,) + self.args[i+1:]
+                    return self.evolve(args=new_args)
+            return None
+
+
 class Builtin(Term):
 
     @abstractmethod
-    def _applicable(self, arg: Term) -> bool:
+    def _applicable(self, args: tuple[Term]) -> bool:
         pass
 
-    def applicable(self, arg: Term) -> bool:
-        if self.is_named or arg.is_named:
-            return False
-        else:
-            return self._applicable(arg)
+    def applicable(self, args: tuple[Term]) -> bool:
+        assert(not self.is_named and all(not arg.is_named for arg in args))
+        return self._applicable(args)
 
     @abstractmethod
-    def _apply_arg(self, arg: Term) -> Term:
+    def _apply_args(self, args: tuple[Term]) -> Term:
         pass
 
-    def apply_arg(self, arg: Term) -> Term:
-        assert self.applicable(arg)
-        return self._apply_arg(arg)
+    def apply_args(self, args: tuple[Term]) -> Term:
+        assert self.applicable(args)
+        return self._apply_args(args)
 
 
 @frozen
@@ -336,10 +385,10 @@ class Constant(Builtin):
     def _remove_name_with_context(self, context: list[str]) -> Term:
         return evolve(self, is_named=False)
 
-    def _applicable(self, term):
+    def _applicable(self, args):
         return False
 
-    def _apply_arg(self, term):
+    def _apply_args(self, args):
         assert False
 
 
@@ -373,7 +422,7 @@ class BuiltinFunction(Builtin):
         pass
 
     @abstractmethod
-    def _apply_arg(self, arg: Term) -> Term:
+    def _apply_args(self, arg: Term) -> Term:
         pass
 
     def _free_variables(self) -> set[str]:
