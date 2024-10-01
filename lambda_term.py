@@ -363,7 +363,7 @@ class Closure:
             head_substituted = self.head.t.subst(0, self.args[0].shift(1, 0))
             return self.evolve(head=head_substituted, args=self.args[1:])
         if isinstance(self.head, Builtin):
-            if self.head.applicable(self.args):
+            if self.head.applicable_args(self.args):
                 reduced, rest = self.head.apply_args(self.args)
                 return self.evolve(head=reduced, args=rest)
         else:
@@ -379,19 +379,19 @@ class Builtin(Term):
     arity: int = field(validator=[helpers.not_none, helpers.non_negative])
 
     @abstractmethod
-    def _applicable(self, args: tuple[Term]) -> bool:
+    def _applicable_args(self, args: tuple[Term]) -> bool:
         pass
 
-    def applicable(self, args: tuple[Term]) -> bool:
+    def applicable_args(self, args: tuple[Term]) -> bool:
         assert (not self.is_named and all(not arg.is_named for arg in args))
-        return len(args) >= self.arity and self._applicable(args)
+        return len(args) >= self.arity and self._applicable_args(args)
 
     @abstractmethod
     def _apply_args(self, args: tuple[Term]) -> Term:
         pass
 
     def apply_args(self, args: tuple[Term]) -> tuple[Term, tuple[Term]]:
-        assert self.applicable(args)
+        assert self.applicable_args(args)
         return self._apply_args(args), args[self.arity:]
 
 
@@ -408,8 +408,8 @@ class Constant(Builtin):
     # def nameless(cls, meta_info=meta.empty, name=name):
     #     return cls(name=name, is_named=False)
 
-    def evolve(self, name: str, is_named: bool):
-        return evolve(self, name=name)
+    def evolve(self, name: str = None, is_named: bool = None):
+        return evolve(self, name=helpers.default(name, self.name), is_named=helpers.default(is_named, self.is_named))
 
     def _eval_or_none(self) -> Term | None:
         return None
@@ -426,10 +426,10 @@ class Constant(Builtin):
     def _remove_name_with_context(self, context: list[str]) -> Term:
         return evolve(self, is_named=False)
 
-    def _applicable(self, args):
+    def _applicable_args(self, _):
         return False
 
-    def _apply_args(self, args):
+    def _apply_args(self, _):
         assert False
 
 
@@ -439,7 +439,7 @@ def constant(name: str):
 
 # Builtin functions.  Arity is always one.
 @frozen
-class BuiltinFunction(Builtin):
+class BuiltinFunction(Builtin, ABC):
     name: str = field(validator=helpers.not_none)
 
     # @classmethod
@@ -462,19 +462,36 @@ class BuiltinFunction(Builtin):
     def _subst_or_none(self, num, term) -> None:
         return None
 
-    @abstractmethod
-    def _applicable(self, arg: tuple[Term]) -> bool:
-        pass
-
-    @abstractmethod
-    def _apply_args(self, arg: tuple[Term]) -> Term:
-        pass
-
     def _free_variables(self) -> set[str]:
         return set()
 
     def _remove_name_with_context(self, context: list[str]) -> Term:
         return evolve(self, is_named=False)
+
+
+@frozen
+class Unary(BuiltinFunction):
+    arity = 1
+
+    @abstractmethod
+    def _applicable(self, arg: Term):
+        pass
+
+    @abstractmethod
+    def _apply_arg(self, arg: Term):
+        pass
+
+    def _applicable_args(self, args: tuple[Term]):
+        if len(args) > 1:
+            return False
+        return self._applicable(args[0])
+
+    def _apply_args(self, args: tuple[Term]):
+        return self._apply_arg(args[0])
+
+
+
+
 
 
 

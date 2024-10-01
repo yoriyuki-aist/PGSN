@@ -32,19 +32,19 @@ def test_lambda_term_const():
     assert t.eval() == c.eval()
 
 
-class Id(lambda_term.BuiltinFunction):
+class Id(lambda_term.Unary):
     arity = 1
 
     def _applicable(self, args):
-        return len(args) == 1
+        return True
 
-    def _apply_args(self, args):
-        return args[0]
+    def _apply_arg(self, arg):
+        return arg
 
 
 def test_builtin():
     id_f = Id.named(name='id').eval()
     c = lambda_term.constant('c').eval()
-    assert id_f.applicable((c,))
+    assert id_f.applicable_args((c,))
     assert id_f.apply_args((c,)) == (c, tuple())
     assert id_f(c).eval() == c
