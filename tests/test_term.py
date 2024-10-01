@@ -18,25 +18,23 @@ def test_var():
 
 
 def test_lambda_term_id():
-    var_x = lambda_term.Variable.from_name('x')
-    id_f = lambda_term.Abs.named(v=var_x, t=var_x)
-    assert id_f == lambda_term.Abs.named(v=var_x, t=var_x)
-    t = lambda_term.App.named(t1=id_f, t2=id_f)
-    assert t == lambda_term.App.named(t1=id_f, t2=id_f)
-    nameless_t = t.remove_name()
-    reduced = nameless_t.eval()
-    assert reduced == id_f.remove_name()
+    x = lambda_term.variable('x')
+    id_f = lambda_term.fun(x, x)
+    t = id_f(id_f)
+    assert t.eval() == id_f.eval()
 
 
 def test_lambda_term_const():
-    c = lambda_term.Constant.nameless('c')
-    var_x = lambda_term.Variable.from_name('x')
-    id_f = lambda_term.Abs.named(v=var_x, t=var_x).remove_name()
-    t = lambda_term.App.nameless(t1=id_f, t2=c)
-    assert t.eval() == c
+    c = lambda_term.constant('c')
+    x = lambda_term.variable('x')
+    id_f = lambda_term.fun(x, c)
+    t = id_f(c)
+    assert t.eval() == c.eval()
 
 
 class Id(lambda_term.BuiltinFunction):
+    arity = 1
+
     def _applicable(self, args):
         return len(args) == 1
 
@@ -45,10 +43,8 @@ class Id(lambda_term.BuiltinFunction):
 
 
 def test_builtin():
-    id_f = Id.nameless('id')
-    c = lambda_term.Constant.nameless('c')
+    id_f = Id.named(name='id').eval()
+    c = lambda_term.constant('c').eval()
     assert id_f.applicable((c,))
-    assert id_f.apply_args((c,)) == c
-    t = lambda_term.App.nameless(id_f, c)
-    assert t.eval() == c
+    assert id_f.apply_args((c,)) == (c, tuple())
     assert id_f(c).eval() == c

@@ -28,14 +28,14 @@ class Term(ABC):
     is_named: bool = field(validator=helpers.not_none)
 
     @classmethod
-    @abstractmethod
-    def nameless(cls, meta_info=meta.empty, *kwarg) -> Term:
-        pass
+    #@abstractmethod
+    def nameless(cls, meta_info=meta.empty, **kwarg) -> Term:
+        return cls(is_named=False, meta_info=meta_info, **kwarg)
 
     @classmethod
-    @abstractmethod
-    def named(cls, meta_info=meta.empty, *kwarg) -> Term:
-        pass
+    #@abstractmethod
+    def named(cls, meta_info=meta.empty, **kwarg) -> Term:
+        return cls(is_named=True, meta_info=meta_info, **kwarg)
 
     @abstractmethod
     def evolve(self, *kwarg):
@@ -46,14 +46,19 @@ class Term(ABC):
     def _eval_or_none(self):
         pass
 
+    # If None is returned, the reduction is terminated.
     def eval_or_none(self):
-        assert not self.is_named
-        evaluated = self._eval_or_none()
+        if self.is_named:
+            t = self.remove_name()
+        else:
+            t = self
+        evaluated = t._eval_or_none()
         assert (evaluated is None) or (not evaluated.is_named)
         return evaluated
-    # If None is returned, the reduction is terminated.
+
     def eval(self) -> Term:
-        evaluated = helpers.default(self.eval_or_none(), self)
+        t = self if not self.is_named else self.remove_name()
+        evaluated = helpers.default(t.eval_or_none(), t)
         assert(not evaluated.is_named)
         return evaluated
 
@@ -75,7 +80,7 @@ class Term(ABC):
         assert not self.is_named
         assert not term.is_named
         substituted = self._subst_or_none(variable, term)
-        assert not substituted.is_named
+        assert substituted is None or not substituted.is_named
         return substituted
 
     def subst(self, variable:int, term: Term) -> Term:
@@ -116,17 +121,25 @@ class Term(ABC):
 
 @frozen
 class Variable(Term):
-    num: int | None = field()
-    name: str | None = field()
     is_named: bool = field()
+    num: int | None = field(default=None)
+    name: str | None = field(default=None)
 
-    @classmethod
-    def nameless(cls, num=0, meta_info=meta.empty) -> Variable:
-        return Variable(num=num, name=None, meta_info=meta_info, is_named=False)
+    @num.validator
+    def _check_num(self, _, v):
+        assert self.is_named or v is not None
 
-    @classmethod
-    def named(cls, name=name, meta_info=meta.empty) -> Variable:
-        return Variable(num=None, name=name, is_named=True, meta_info=meta_info)
+    @name.validator
+    def _check_name(self, _, v):
+        assert not self.is_named or v is not None
+
+    # @classmethod
+    # def nameless(cls, num=0, meta_info=meta.empty) -> Variable:
+    #     return cls(num=num, name=None, meta_info=meta_info, is_named=False)
+    #
+    # @classmethod
+    # def named(cls, name=name, meta_info=meta.empty) -> Variable:
+    #     return cls(num=None, name=name, is_named=True, meta_info=meta_info)
 
     @classmethod
     def from_name(cls, name:str):
@@ -163,20 +176,32 @@ class Variable(Term):
         return self.evolve(num=num)
 
 
+def variable(name: str) -> Variable:
+    return Variable.named(name=name)
+
+
 @frozen
 class Abs(Term):
     v: Variable | None = field()
     t: Term = field(validator=helpers.not_none)
 
-    @classmethod
-    def nameless(cls, t=t, meta_info=meta.empty):
-        assert not t.is_named
-        return Abs(is_named=False, v=None, t=t, meta_info=meta_info)
+    @v.validator
+    def _check_v(self, attribute, value):
+        assert value is None or value.is_named
 
-    @classmethod
-    def named(cls, v=v, t=t):
-        assert v is not None and v.is_named and t.is_named
-        return Abs(is_named=True, v=v, t=t, meta_info=meta.empty)
+    @t.validator
+    def _check_t(self, _, value):
+        assert value.is_named == self.is_named
+
+    # @classmethod
+    # def nameless(cls, t=t, meta_info=meta.empty):
+    #     assert not t.is_named
+    #     return cls(is_named=False, v=None, t=t, meta_info=meta_info)
+    #
+    # @classmethod
+    # def named(cls, v=v, t=t):
+    #     assert v is not None and v.is_named and t.is_named
+    #     return cls(is_named=True, v=v, t=t, meta_info=meta.empty)
 
     def __attr_post_init__(self):
         assert self.v.is_named == self.t.is_named
@@ -214,20 +239,32 @@ class Abs(Term):
         return self.evolve(t=name_less_t, v=None)
 
 
+def fun(v: Variable, t: Term):
+    return Abs.named(v=v, t=t)
+
+
 @frozen
 class App(Term):
     t1: Term = field(validator=helpers.not_none)
     t2: Term = field(validator=helpers.not_none)
 
-    @classmethod
-    def nameless(cls, t1: Term = t1, t2: Term = t2, meta_info: MetaInfo = meta.empty):
-        assert not t1.is_named and not t2.is_named
-        return App(is_named=False, t1=t1, t2=t2, meta_info=meta_info)
+    @t1.validator
+    def _check_t1(self, _, v):
+        assert v.is_named == self.is_named
 
-    @classmethod
-    def named(cls, t1: Term = t1, t2: Term = t2):
-        assert t1.is_named and t2.is_named
-        return App(is_named=True, t1=t1, t2=t2)
+    @t1.validator
+    def _check_t2(self, _, v):
+        assert v.is_named == self.is_named
+
+    # @classmethod
+    # def nameless(cls, t1: Term = t1, t2: Term = t2, meta_info: MetaInfo = meta.empty):
+    #     assert not t1.is_named and not t2.is_named
+    #     return cls(is_named=False, t1=t1, t2=t2, meta_info=meta_info)
+    #
+    # @classmethod
+    # def named(cls, t1: Term = t1, t2: Term = t2):
+    #     assert t1.is_named and t2.is_named
+    #     return cls(is_named=True, t1=t1, t2=t2)
 
     @classmethod
     def term(cls, t1: Term, t2: Term):
@@ -296,6 +333,8 @@ class Closure:
     def build(cls, head, args):
         if isinstance(head, App):
             return cls.build(head=head.t1, args=(head.t2,) + args)
+        else:
+            return cls(head=head, args=args)
 
     def evolve(self, head=None, args=None):
         if head is None:
@@ -325,8 +364,8 @@ class Closure:
             return self.evolve(head=head_substituted, args=self.args[1:])
         if isinstance(self.head, Builtin):
             if self.head.applicable(self.args):
-                reduced = self.head.apply_args(self.args)
-                return self.evolve(head=reduced, args=tuple())
+                reduced, rest = self.head.apply_args(self.args)
+                return self.evolve(head=reduced, args=rest)
         else:
             for i in range(len(self.args)):
                 arg_reduced = self.args[i].eval_or_none()
@@ -337,35 +376,37 @@ class Closure:
 
 
 class Builtin(Term):
+    arity: int = field(validator=[helpers.not_none, helpers.non_negative])
 
     @abstractmethod
     def _applicable(self, args: tuple[Term]) -> bool:
         pass
 
     def applicable(self, args: tuple[Term]) -> bool:
-        assert(not self.is_named and all(not arg.is_named for arg in args))
-        return self._applicable(args)
+        assert (not self.is_named and all(not arg.is_named for arg in args))
+        return len(args) >= self.arity and self._applicable(args)
 
     @abstractmethod
     def _apply_args(self, args: tuple[Term]) -> Term:
         pass
 
-    def apply_args(self, args: tuple[Term]) -> Term:
+    def apply_args(self, args: tuple[Term]) -> tuple[Term, tuple[Term]]:
         assert self.applicable(args)
-        return self._apply_args(args)
+        return self._apply_args(args), args[self.arity:]
 
 
 @frozen
 class Constant(Builtin):
     name: str = field(validator=helpers.not_none)
+    arity = 0
 
-    @classmethod
-    def named(cls, meta_info=meta.empty, name=name):
-        return Constant(name=name, is_named=True)
-
-    @classmethod
-    def nameless(cls, meta_info=meta.empty, name=name):
-        return Constant(name=name, is_named=False)
+    # @classmethod
+    # def named(cls, meta_info=meta.empty, name=name):
+    #     return cls(name=name, is_named=True)
+    #
+    # @classmethod
+    # def nameless(cls, meta_info=meta.empty, name=name):
+    #     return cls(name=name, is_named=False)
 
     def evolve(self, name: str, is_named: bool):
         return evolve(self, name=name)
@@ -392,18 +433,22 @@ class Constant(Builtin):
         assert False
 
 
+def constant(name: str):
+    return Constant.named(name=name)
+
+
 # Builtin functions.  Arity is always one.
 @frozen
 class BuiltinFunction(Builtin):
     name: str = field(validator=helpers.not_none)
 
-    @classmethod
-    def nameless(cls, meta_info=meta.empty, name=name):
-        return cls(name=name, is_named=False, meta_info=meta_info)
-
-    @classmethod
-    def named(cls, meta_info=meta.empty, name=name):
-        return cls(name=name, is_named=True)
+    # @classmethod
+    # def nameless(cls, meta_info=meta.empty, name=name, arity=1):
+    #     return cls(name=name, is_named=False, meta_info=meta_info, arity=arity)
+    #
+    # @classmethod
+    # def named(cls, meta_info=meta.empty, name=name):
+    #     return cls(name=name, is_named=True, meta_info=meta_info, arity=arity)
 
     def evolve(self, name=name):
         return evolve(self, name=name)
@@ -418,11 +463,11 @@ class BuiltinFunction(Builtin):
         return None
 
     @abstractmethod
-    def _applicable(self, arg: Term) -> bool:
+    def _applicable(self, arg: tuple[Term]) -> bool:
         pass
 
     @abstractmethod
-    def _apply_args(self, arg: Term) -> Term:
+    def _apply_args(self, arg: tuple[Term]) -> Term:
         pass
 
     def _free_variables(self) -> set[str]:
