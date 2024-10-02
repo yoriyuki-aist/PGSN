@@ -2,7 +2,7 @@ from __future__ import annotations
 import helpers
 from typing import Any
 from attrs import field, frozen, evolve
-from lambda_term import Constant, BuiltinFunction, Abs, App, Term
+from lambda_term import Constant, BuiltinFunction, Abs, App, Term, Unary
 from record_term import Record
 from list_term import List
 from data_term import String, Integer
@@ -25,37 +25,26 @@ empty_list = List.named(terms=[])
 
 
 @frozen
-class AddHead(BuiltinFunction):
-    head: Term = field(validator=helpers.not_none)
-
-    def _applicable(self, arg: Term):
-        return isinstance(arg, List)
-
-    def _apply_args(self, arg: List) -> List:
-        added = (self.head,) + arg.terms
-        return List(terms=added, is_named=self.is_named)
-
-
-@frozen
 class Cons(BuiltinFunction):
+    arity=2
 
-    def _applicable(self, arg: Term):
-        return True
+    def _applicable_args(self, args: tuple[Term]):
+        return isinstance(args[1], List)
 
-    def _apply_args(self, arg: Term):
-        return AddHead(head=arg, is_named=self.is_named)
+    def _apply_args(self, args: tuple[Term]):
+        return args[1].evolve(terms=(args[0],) + args[1])
 
 
 cons = Cons.named(name='stdlib.cons')
 
 
 @frozen
-class Head(BuiltinFunction):
+class Head(Unary):
 
     def _applicable(self, arg: Term):
         return isinstance(arg, List) and len(arg.terms) >= 1
 
-    def _apply_args(self, arg: List) -> Term:
+    def _apply_arg(self, arg: List) -> Term:
         return arg.terms[0]
 
 
@@ -63,40 +52,26 @@ head = Head.named(name='stdlib.head')
 
 
 @frozen
-class Tail(BuiltinFunction):
+class Tail(Unary):
 
     def _applicable(self, arg: Term):
         return isinstance(arg, List) and len(arg.terms) >= 1
 
-    def _apply_args(self, arg: List) -> List:
+    def _apply_arg(self, arg: List) -> List:
         return List(terms=arg.terms[1:], is_named=self.is_named)
 
 
 tail = Tail.named(name='stdlib.tail')
 
 
-@frozen
-class Query(BuiltinFunction):
-    queried_list: tuple[Term] = field(validator=helpers.not_none)
-
-    def _applicable(self, arg: Term):
-        if not isinstance(arg, Integer):
-            return False
-        i = int(arg.value)
-        return 0 <= i < len(self.queried_list)
-
-    def _apply_args(self, arg: Integer) -> Term:
-        i = int(arg.value)
-        return self.queried_list[i]
-
-
 class Index(BuiltinFunction):
+    arity=2
 
-    def _applicable(self, arg: Term):
-        return isinstance(arg, List)
+    def _applicable_args(self, args: tuple[Term]):
+        return isinstance(args[0], List) and isinstance(args[1], Integer)
 
-    def _apply_args(self, arg: List) -> Query:
-        return Query(queried_list=arg.terms)
+    def _apply_args(self, args: tuple[Term]) -> Term:
+        return args[0].terms[args[1].value]
 
 
 index = Index.named(name='stdlib.indexing')
@@ -104,37 +79,25 @@ index = Index.named(name='stdlib.indexing')
 
 @frozen
 class Fold(BuiltinFunction):
+    arity = 3
 
-    def _applicable(self, arg: Term):
-        if not isinstance(arg, Record):
+    def _applicable_args(self, args: tuple(Term)):
+        if not len(args) >= 3:
             return False
-        if not helpers.contains('fun', arg.terms):
-            return False
-        if not helpers.contains('init', arg.terms):
-            return False
-        if not helpers.contains('list', arg.terms):
-            return False
-        arg = helpers.query(arg.terms, 'list')
-        if not isinstance(arg, List):
+        if not isinstance(args[2], List):
             return False
         return True
 
-    def _apply_args(self, arg: Record) -> Term:
-        assert self.applicable(arg)
-        fun = helpers.query(arg.terms, 'fun')
-        init = helpers.query(arg.terms, 'init')
-        arg = helpers.query(arg.terms, 'list')
-        arg_list = arg.terms
+    def _apply_args(self, args: tuple[Term]) -> Term:
+        fun = args[0]
+        init = args[1]
+        arg_list = args[2].terms
         if len(arg_list) == 0:
             return init
         list_head = arg_list[0]
         list_rest = arg_list[1:]
         rest = List(terms=list_rest, is_named=self.is_named)
-        new_fold_args = Record(terms=(('fun', fun), ('init', init), ('list', rest)),
-                                         meta_info=self.meta_info, is_named=self.is_named)
-        new_fold = App(self, new_fold_args, is_named=self.is_named)
-        new_args = List((list_head, new_fold), is_named=self.is_named)
-        return App(fun, new_args, is_named=self.is_named)
+        return fun(list_head)(self(fun)(init)(rest))
 
 
 fold = Fold.named(name='stdlib.fold')
@@ -142,25 +105,19 @@ fold = Fold.named(name='stdlib.fold')
 
 @frozen
 class Map(BuiltinFunction):
+    arity=2
 
-    def _applicable(self, arg: Term):
-        if not isinstance(arg, Record):
-            return False
-        if not helpers.contains('fun', arg.terms):
-            return False
-        if not helpers.contains('list', arg.terms):
-            return False
-        arg = helpers.query(arg.terms, 'list')
-        if not isinstance(arg, List):
+    def _applicable_args(self, args: tuple[Term]):
+        if not isinstance(args[2], List):
             return False
         return True
 
-    def _apply_args(self, arg: Record) -> Term:
-        assert self.applicable(arg)
-        fun = helpers.query(arg.terms, 'fun')
-        arg = helpers.query(arg.terms, 'list')
+    def _apply_args(self, args: tuple[Term]) -> Term:
+        fun = args[0]
+        arg = args[1]
         arg_list = arg.terms
-        map_list = tuple(App(fun, t, is_named=self.is_named) for t in arg_list)
+        map_list = tuple((fun(t) for t in arg_list))
+
         map_result = List(terms=map_list, is_named=self.is_named)
         return map_result
 
