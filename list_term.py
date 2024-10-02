@@ -60,7 +60,7 @@ class List(Unary):
         return isinstance(term, Integer)
 
     def _apply_arg(self, term):
-        assert self.terms[term.value]
+        return self.terms[term.value]
 
 
 # Constant
