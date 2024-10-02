@@ -22,30 +22,6 @@ class Data(Builtin, Generic[T], ABC):
     def named(cls, value=value, meta_info: MetaInfo = meta.empty):
         return cls(value=value, is_named=True)
 
-    def _eval_or_none(self):
-        return None
-
-    def _shift(self, d, c):
-        return self
-
-    def _subst_or_none(self, var, term):
-        return None
-
-    def _free_variables(self):
-        return set()
-
-    def _remove_name_with_context(self, _):
-        return type(self).nameless(self.value)
-
-    def _applicable(self, _):
-        return False
-
-    def _apply_args(self, _):
-        assert False
-
-
-class String(Data[str]):
-
     @classmethod
     def nameless_repr(cls, value):
         assert hasattr(value, '__repr__')
@@ -66,8 +42,30 @@ class String(Data[str]):
         assert hasattr(value, '__str__')
         return cls.named(str(value))
 
-    def evolve(self, value):
-        return evolve(self, value=value)
+    def _eval_or_none(self):
+        return None
+
+    def _shift(self, d, c):
+        return self
+
+    def _subst_or_none(self, var, term):
+        return None
+
+    def _free_variables(self):
+        return set()
+
+    def _remove_name_with_context(self, _):
+        return type(self).nameless(self.value)
+
+    def _applicable_args(self, _):
+        return False
+
+    def _apply_args(self, _):
+        assert False
+
+
+class String(Data[str]):
+    pass
 
 
 class Integer(Data[int]):
@@ -83,9 +81,6 @@ class Integer(Data[int]):
         assert isinstance(string, str)
         assert string.isdecimal()
         return cls.named(value=int(string))
-
-    def evolve(self, value):
-        return evolve(self, value=value)
 
 
 
