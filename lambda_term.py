@@ -24,18 +24,18 @@ def naming_context(names: set[str]) -> list[str]:
 @frozen(kw_only=True)
 class Term(ABC):
     # meta_info is always not empty
-    meta_info: MetaInfo = field(default=MetaInfo(), eq=False)
+    meta_info: MetaInfo = field(default=meta.empty, eq=False)
     is_named: bool = field(validator=helpers.not_none)
 
     @classmethod
     #@abstractmethod
-    def nameless(cls, meta_info=meta.empty, **kwarg) -> Term:
-        return cls(is_named=False, meta_info=meta_info, **kwarg)
+    def nameless(cls, **kwarg) -> Term:
+        return cls(is_named=False, **kwarg)
 
     @classmethod
     #@abstractmethod
-    def named(cls, meta_info=meta.empty, **kwarg) -> Term:
-        return cls(is_named=True, meta_info=meta_info, **kwarg)
+    def named(cls, **kwarg) -> Term:
+        return cls(is_named=True, **kwarg)
 
     def evolve(self, **kwarg):
         return evolve(self, **kwarg)

@@ -1,14 +1,15 @@
 from __future__ import annotations
 import helpers
 from attrs import field, frozen, evolve
-from lambda_term import Term, Builtin
+from lambda_term import Term, Builtin, Unary
 import meta_info as meta
 from meta_info import MetaInfo
 from data_term import String
 
 
 @frozen
-class Record(Builtin):
+class Record(Unary):
+    name = 'Record'
     terms: tuple[tuple[str, Term]] = \
         field(default=tuple(), validator=helpers.not_none)
 
@@ -49,17 +50,11 @@ class Record(Builtin):
         return set().union(*(t.free_variables() for _, t in self.terms))
 
     def _remove_name_with_context(self, context):
-        return Record.nameless(tuple((label, t.remove_name_with_context(context)) for label, t in self.terms),
-                               meta_info=self.meta_info)
+        return self.evolve(terms=tuple((label, t.remove_name_with_context(context)) for label, t in self.terms),
+                           is_named=False)
 
-    def evolve(self, terms: tuple[tuple[str, Term]]):
-        return evolve(self, terms=terms)
+    def _applicable(self, term: String):
+        return isinstance(term, String) and helpers.contains(term.value, self.terms)
 
-    def _applicable_args(self, term):
-        return False
-
-    def _apply_args(self, term):
-        assert False
-
-
-empty = Record.named(tuple())
+    def _apply_arg(self, term: String):
+        return helpers.query(self.terms, term.value)
