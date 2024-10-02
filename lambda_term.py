@@ -120,7 +120,6 @@ class Term(ABC):
 
 @frozen
 class Variable(Term):
-    is_named: bool = field()
     num: int | None = field(default=None)
     name: str | None = field(default=None)
 
@@ -436,7 +435,6 @@ def constant(name: str):
 # Builtin functions.  Arity is always one.
 @frozen
 class BuiltinFunction(Builtin, ABC):
-    name: str = field(validator=helpers.not_none)
 
     # @classmethod
     # def nameless(cls, meta_info=meta.empty, name=name, arity=1):
@@ -463,7 +461,7 @@ class BuiltinFunction(Builtin, ABC):
 
 
 @frozen
-class Unary(BuiltinFunction):
+class Unary(BuiltinFunction, ABC):
     arity = 1
 
     @abstractmethod

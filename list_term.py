@@ -4,7 +4,7 @@ import helpers
 from attrs import field, frozen, evolve
 from meta_info import MetaInfo
 import meta_info as meta
-from lambda_term import Term, Constant, BuiltinFunction, Abs, App, Builtin
+from lambda_term import Term, Constant, BuiltinFunction, Abs, App, Builtin, Unary
 from data_term import String, Integer
 
 # Arbitrary Python data
@@ -13,8 +13,9 @@ from data_term import String, Integer
 # List
 
 @frozen
-class List(Builtin):
+class List(Unary):
     terms: tuple[Term] = field(validator=helpers.not_none)
+    name: str = 'List'
 
     # @classmethod
     # def nameless(cls, terms: Iterable[Term] = tuple(), meta_info: MetaInfo = meta.empty):
@@ -28,10 +29,6 @@ class List(Builtin):
     #
     def __attr_post_init__(self):
         assert len(self.terms) == 0 or all((t == self.is_named for t in self.terms))
-
-    def evolve(self, terms):
-        assert len(terms) == 0 or all((t == terms[0].is_named for t in terms))
-        return evolve(self, terms=terms)
 
     def _eval_or_none(self):
         evaluated = [term.eval_or_none() for term in self.terms]
@@ -59,11 +56,11 @@ class List(Builtin):
     def _remove_name_with_context(self, context):
         return List.nameless(meta_info=self.meta_info, terms=[t.remove_name_with_context(context) for t in self.terms])
 
-    def _applicable_args(self, terms):
-        return False
+    def _applicable(self, term):
+        return isinstance(term, Integer)
 
-    def _apply_args(self, terms):
-        assert False
+    def _apply_arg(self, term):
+        assert self.terms[term.value]
 
 
 # Constant
