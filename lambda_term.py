@@ -28,12 +28,17 @@ class Term(ABC):
     is_named: bool = field(validator=helpers.not_none)
 
     @classmethod
+    #@abstractmethod
     def nameless(cls, meta_info=meta.empty, **kwarg) -> Term:
         return cls(is_named=False, meta_info=meta_info, **kwarg)
 
     @classmethod
+    #@abstractmethod
     def named(cls, meta_info=meta.empty, **kwarg) -> Term:
         return cls(is_named=True, meta_info=meta_info, **kwarg)
+
+    def evolve(self, **kwarg):
+        return evolve(self, **kwarg)
 
     # Only application becomes closure, otherwise None
     @abstractmethod
@@ -401,9 +406,6 @@ class Constant(Builtin):
     # @classmethod
     # def nameless(cls, meta_info=meta.empty, name=name):
     #     return cls(name=name, is_named=False)
-
-    def evolve(self, name: str = None, is_named: bool = None):
-        return evolve(self, name=helpers.default(name, self.name), is_named=helpers.default(is_named, self.is_named))
 
     def _eval_or_none(self) -> Term | None:
         return None
