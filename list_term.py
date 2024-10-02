@@ -1,13 +1,8 @@
 from __future__ import annotations
-from collections.abc import Iterable
 import helpers
 from attrs import field, frozen, evolve
-from meta_info import MetaInfo
-import meta_info as meta
-from lambda_term import Term, Constant, BuiltinFunction, Abs, App, Builtin, Unary
-from data_term import String, Integer
-
-# Arbitrary Python data
+from lambda_term import Term, Unary
+from data_term import Integer
 
 
 # List
@@ -17,16 +12,6 @@ class List(Unary):
     terms: tuple[Term] = field(validator=helpers.not_none)
     name: str = 'List'
 
-    # @classmethod
-    # def nameless(cls, terms: Iterable[Term] = tuple(), meta_info: MetaInfo = meta.empty):
-    #     assert all((not t.is_named for t in terms))
-    #     return List(terms=tuple(terms), is_named=False)
-    #
-    # @classmethod
-    # def named(cls, terms: Iterable[Term] = tuple(), meta_info: MetaInfo = meta.empty):
-    #     assert all((t.is_named for t in terms))
-    #     return List(terms=tuple(terms), is_named=True)
-    #
     def __attr_post_init__(self):
         assert len(self.terms) == 0 or all((t == self.is_named for t in self.terms))
 

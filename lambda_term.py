@@ -28,12 +28,10 @@ class Term(ABC):
     is_named: bool = field(validator=helpers.not_none)
 
     @classmethod
-    #@abstractmethod
     def nameless(cls, **kwarg) -> Term:
         return cls(is_named=False, **kwarg)
 
     @classmethod
-    #@abstractmethod
     def named(cls, **kwarg) -> Term:
         return cls(is_named=True, **kwarg)
 
@@ -131,14 +129,6 @@ class Variable(Term):
     def _check_name(self, _, v):
         assert not self.is_named or v is not None
 
-    # @classmethod
-    # def nameless(cls, num=0, meta_info=meta.empty) -> Variable:
-    #     return cls(num=num, name=None, meta_info=meta_info, is_named=False)
-    #
-    # @classmethod
-    # def named(cls, name=name, meta_info=meta.empty) -> Variable:
-    #     return cls(num=None, name=name, is_named=True, meta_info=meta_info)
-
     @classmethod
     def from_name(cls, name:str):
         return cls.named(name=name)
@@ -190,16 +180,6 @@ class Abs(Term):
     @t.validator
     def _check_t(self, _, value):
         assert value.is_named == self.is_named
-
-    # @classmethod
-    # def nameless(cls, t=t, meta_info=meta.empty):
-    #     assert not t.is_named
-    #     return cls(is_named=False, v=None, t=t, meta_info=meta_info)
-    #
-    # @classmethod
-    # def named(cls, v=v, t=t):
-    #     assert v is not None and v.is_named and t.is_named
-    #     return cls(is_named=True, v=v, t=t, meta_info=meta.empty)
 
     def __attr_post_init__(self):
         assert self.v.is_named == self.t.is_named
@@ -253,16 +233,6 @@ class App(Term):
     @t1.validator
     def _check_t2(self, _, v):
         assert v.is_named == self.is_named
-
-    # @classmethod
-    # def nameless(cls, t1: Term = t1, t2: Term = t2, meta_info: MetaInfo = meta.empty):
-    #     assert not t1.is_named and not t2.is_named
-    #     return cls(is_named=False, t1=t1, t2=t2, meta_info=meta_info)
-    #
-    # @classmethod
-    # def named(cls, t1: Term = t1, t2: Term = t2):
-    #     assert t1.is_named and t2.is_named
-    #     return cls(is_named=True, t1=t1, t2=t2)
 
     @classmethod
     def term(cls, t1: Term, t2: Term):
@@ -398,14 +368,6 @@ class Constant(Builtin):
     name: str = field(validator=helpers.not_none)
     arity = 0
 
-    # @classmethod
-    # def named(cls, meta_info=meta.empty, name=name):
-    #     return cls(name=name, is_named=True)
-    #
-    # @classmethod
-    # def nameless(cls, meta_info=meta.empty, name=name):
-    #     return cls(name=name, is_named=False)
-
     def _eval_or_none(self) -> Term | None:
         return None
 
@@ -435,14 +397,6 @@ def constant(name: str):
 # Builtin functions.  Arity is always one.
 @frozen
 class BuiltinFunction(Builtin, ABC):
-
-    # @classmethod
-    # def nameless(cls, meta_info=meta.empty, name=name, arity=1):
-    #     return cls(name=name, is_named=False, meta_info=meta_info, arity=arity)
-    #
-    # @classmethod
-    # def named(cls, meta_info=meta.empty, name=name):
-    #     return cls(name=name, is_named=True, meta_info=meta_info, arity=arity)
 
     def _eval_or_none(self) -> None:
         return None

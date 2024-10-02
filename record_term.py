@@ -1,9 +1,7 @@
 from __future__ import annotations
 import helpers
-from attrs import field, frozen, evolve
-from lambda_term import Term, Builtin, Unary
-import meta_info as meta
-from meta_info import MetaInfo
+from attrs import field, frozen
+from lambda_term import Term, Unary
 from data_term import String
 
 
@@ -15,16 +13,6 @@ class Record(Unary):
 
     def __attr_post_init__(self):
         assert len(self.terms) == 0 or all((t == self.is_named for k, t in self.terms))
-
-    # @classmethod
-    # def named(cls, terms: tuple[tuple[str, Term]] = tuple(), meta_info: MetaInfo = meta.empty):
-    #     assert all((t[1].is_named for t in terms))
-    #     return Record(terms=terms, is_named=True)
-    #
-    # @classmethod
-    # def nameless(cls, terms: tuple[tuple[str, Term]] = tuple(), meta_info: MetaInfo = meta.empty):
-    #     assert all((not t[1].is_named for t in terms))
-    #     return Record(terms=terms, is_named=False)
 
     def _eval_or_none(self):
         evaluated = tuple((label, t.eval_or_none()) for label, t in self.terms)
