@@ -5,7 +5,8 @@ from data_term import Integer, String
 
 
 def test_record():
-    x = lambda_term.Constant.nameless('x')
-    y = lambda_term.Constant.nameless('y')
-    z = lambda_term.Constant.nameless('z')
-    r = Record.nameless((('x', x), ('y', y), ('z', z)))
+    x = lambda_term.constant('x')
+    y = lambda_term.constant('y')
+    z = lambda_term.constant('z')
+    r = Record.named(terms=(('x', x), ('y', y), ('z', z)))
+    assert r.terms == (('x', x), ('y', y), ('z', z))

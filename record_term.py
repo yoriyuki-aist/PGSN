@@ -15,15 +15,15 @@ class Record(Builtin):
     def __attr_post_init__(self):
         assert len(self.terms) == 0 or all((t == self.is_named for k, t in self.terms))
 
-    @classmethod
-    def named(cls, terms: tuple[tuple[str, Term]] = tuple(), meta_info: MetaInfo = meta.empty):
-        assert all((t[1].is_named for t in terms))
-        return Record(terms=terms, is_named=True)
-
-    @classmethod
-    def nameless(cls, terms: tuple[tuple[str, Term]] = tuple(), meta_info: MetaInfo = meta.empty):
-        assert all((not t[1].is_named for t in terms))
-        return Record(terms=terms, is_named=False)
+    # @classmethod
+    # def named(cls, terms: tuple[tuple[str, Term]] = tuple(), meta_info: MetaInfo = meta.empty):
+    #     assert all((t[1].is_named for t in terms))
+    #     return Record(terms=terms, is_named=True)
+    #
+    # @classmethod
+    # def nameless(cls, terms: tuple[tuple[str, Term]] = tuple(), meta_info: MetaInfo = meta.empty):
+    #     assert all((not t[1].is_named for t in terms))
+    #     return Record(terms=terms, is_named=False)
 
     def _eval_or_none(self):
         evaluated = tuple((label, t.eval_or_none()) for label, t in self.terms)
@@ -55,7 +55,7 @@ class Record(Builtin):
     def evolve(self, terms: tuple[tuple[str, Term]]):
         return evolve(self, terms=terms)
 
-    def _applicable(self, term):
+    def _applicable_args(self, term):
         return False
 
     def _apply_args(self, term):
