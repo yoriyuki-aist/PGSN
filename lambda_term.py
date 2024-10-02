@@ -28,18 +28,12 @@ class Term(ABC):
     is_named: bool = field(validator=helpers.not_none)
 
     @classmethod
-    #@abstractmethod
     def nameless(cls, meta_info=meta.empty, **kwarg) -> Term:
         return cls(is_named=False, meta_info=meta_info, **kwarg)
 
     @classmethod
-    #@abstractmethod
     def named(cls, meta_info=meta.empty, **kwarg) -> Term:
         return cls(is_named=True, meta_info=meta_info, **kwarg)
-
-    @abstractmethod
-    def evolve(self, *kwarg):
-        pass
 
     # Only application becomes closure, otherwise None
     @abstractmethod
@@ -449,9 +443,6 @@ class BuiltinFunction(Builtin, ABC):
     # @classmethod
     # def named(cls, meta_info=meta.empty, name=name):
     #     return cls(name=name, is_named=True, meta_info=meta_info, arity=arity)
-
-    def evolve(self, name=name):
-        return evolve(self, name=name)
 
     def _eval_or_none(self) -> None:
         return None
