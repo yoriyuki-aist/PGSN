@@ -59,6 +59,17 @@ class Term(ABC):
         assert(not evaluated.is_named)
         return evaluated
 
+    # FIXME: Use closures as the intermediate steps, not terms
+    def fully_eval(self, step=1000) -> Term | None:
+        t = self if not self.is_named else self.remove_name()
+        for _ in range(step):
+            t_reduced = t.eval_or_none()
+            assert t_reduced is None or t_reduced != t  # should progress
+            if t_reduced is None:
+                return t
+            t = t_reduced
+        return None
+
     @abstractmethod
     def _shift(self, num: int, cutoff: int) -> Term:
         pass
@@ -217,7 +228,7 @@ class Abs(Term):
         return self.evolve(t=name_less_t, v=None)
 
 
-def fun(v: Variable, t: Term):
+def lambda_abs(v: Variable, t: Term):
     return Abs.named(v=v, t=t)
 
 
@@ -258,13 +269,13 @@ class App(Term):
         if isinstance(self.t1, App):
             return self.t1.to_closure().stack(self.t2)
         else:
-            return Closure(head=self.t1, args=(self.t2,))
+            return Closure.build(head=self.t1, args=(self.t2,))
 
     def _eval_or_none(self):
         if isinstance(self.t1, App):
             c = self.t1.to_closure().stack(self.t2)
         else:
-            c = Closure(head=self.t1, args=(self.t2,))
+            c = Closure.build(head=self.t1, args=(self.t2,))
         c_reduced = c.reduce_or_none()
         if c_reduced is None:
             return None
@@ -295,7 +306,7 @@ class App(Term):
 @frozen
 class Closure:
     head: Term = field(validator=helpers.not_none)
-    args: tuple[Term] = field(default=(), validator=helpers.not_none)
+    args: tuple[Term,...] = field(default=(), validator=helpers.not_none)
 
     @classmethod
     def build(cls, head, args):
@@ -314,7 +325,7 @@ class Closure:
     def to_term(self) -> Term:
         term = self.head
         for arg in self.args:
-            term = App.nameless(term, arg)
+            term = term(arg)
         return term
 
     def stack(self, arg: Term):
@@ -330,16 +341,15 @@ class Closure:
         if isinstance(self.head, Abs):
             head_substituted = self.head.t.subst(0, self.args[0].shift(1, 0))
             return self.evolve(head=head_substituted, args=self.args[1:])
-        if isinstance(self.head, Builtin):
-            if self.head.applicable_args(self.args):
-                reduced, rest = self.head.apply_args(self.args)
-                return self.evolve(head=reduced, args=rest)
+        for i in range(len(self.args)):
+            arg_reduced = self.args[i].eval_or_none()
+            if arg_reduced is not None:
+                new_args = self.args[0:i] + (arg_reduced,) + self.args[i + 1:]
+                return self.evolve(args=new_args)
+        if isinstance(self.head, Builtin) and self.head.applicable_args(self.args):
+            reduced, rest = self.head.apply_args(self.args)
+            return self.evolve(head=reduced, args=rest)
         else:
-            for i in range(len(self.args)):
-                arg_reduced = self.args[i].eval_or_none()
-                if arg_reduced is not None:
-                    new_args = self.args[0:i-1] + (arg_reduced,) + self.args[i+1:]
-                    return self.evolve(args=new_args)
             return None
 
 
@@ -347,18 +357,18 @@ class Builtin(Term):
     arity: int = field(validator=[helpers.not_none, helpers.non_negative])
 
     @abstractmethod
-    def _applicable_args(self, args: tuple[Term]) -> bool:
+    def _applicable_args(self, args: tuple[Term, ...]) -> bool:
         pass
 
-    def applicable_args(self, args: tuple[Term]) -> bool:
+    def applicable_args(self, args: tuple[Term, ...]) -> bool:
         assert (not self.is_named and all(not arg.is_named for arg in args))
         return len(args) >= self.arity and self._applicable_args(args)
 
     @abstractmethod
-    def _apply_args(self, args: tuple[Term]) -> Term:
+    def _apply_args(self, args: tuple[Term, ...]) -> Term:
         pass
 
-    def apply_args(self, args: tuple[Term]) -> tuple[Term, tuple[Term]]:
+    def apply_args(self, args: tuple[Term, ...]) -> tuple[Term, tuple[Term, ...]]:
         assert self.applicable_args(args)
         return self._apply_args(args), args[self.arity:]
 
@@ -426,12 +436,10 @@ class Unary(BuiltinFunction, ABC):
     def _apply_arg(self, arg: Term):
         pass
 
-    def _applicable_args(self, args: tuple[Term]):
-        if len(args) > 1:
-            return False
-        return self._applicable(args[0])
+    def _applicable_args(self, args: tuple[Term, ...]):
+        return len(args) >= 1 and self._applicable(args[0])
 
-    def _apply_args(self, args: tuple[Term]):
+    def _apply_args(self, args: tuple[Term, ...]):
         return self._apply_arg(args[0])
 
 

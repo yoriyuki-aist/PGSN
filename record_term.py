@@ -8,7 +8,7 @@ from data_term import String
 @frozen
 class Record(Unary):
     name = 'Record'
-    terms: tuple[tuple[str, Term]] = \
+    terms: tuple[tuple[str, Term], ...] = \
         field(default=tuple(), validator=helpers.not_none)
 
     def __attr_post_init__(self):

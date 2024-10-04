@@ -9,7 +9,7 @@ from data_term import Integer
 
 @frozen
 class List(Unary):
-    terms: tuple[Term] = field(validator=helpers.not_none)
+    terms: tuple[Term, ...] = field(validator=helpers.not_none)
     name: str = 'List'
 
     def __attr_post_init__(self):
@@ -39,7 +39,8 @@ class List(Unary):
         return set().union(*[t.free_variables() for t in self.terms])
 
     def _remove_name_with_context(self, context):
-        return List.nameless(meta_info=self.meta_info, terms=[t.remove_name_with_context(context) for t in self.terms])
+        return List.nameless(meta_info=self.meta_info,
+                             terms=tuple(t.remove_name_with_context(context) for t in self.terms))
 
     def _applicable(self, term):
         return isinstance(term, Integer)

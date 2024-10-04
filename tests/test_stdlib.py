@@ -1,65 +1,27 @@
 import meta_info
-# from lambda_term import App, Constant, Abs, NamedVariable
-# from string_term import String
-# from list_term import List, NamedList
-# import record_term
-# import stdlib
-#
-#
-# def test_empty_list():
-#     assert stdlib.empty_list.terms == []
-#
-#
-# def test_add_head():
-#     c = Constant('c')
-#     args = List([c, stdlib.empty_list])
-#     t = App(stdlib.add_head, args)
-#     assert t.eval().terms[0] == c
-#     t1 = App(stdlib.add_head, c)
-#     assert t1.eval() == t1
-#
-#
-# def test_head():
-#     c = Constant('c')
-#     args = List([c, stdlib.empty_list])
-#     t0 = App(stdlib.add_head, args)
-#     t = App(stdlib.head, t0)
-#     assert t.eval() == c
-#     t1 = App(stdlib.head, c)
-#     assert t1.eval() == t1
-#
-#
-# def test_tail():
-#     c = Constant('c')
-#     args = List([c, stdlib.empty_list])
-#     t0 = App(stdlib.add_head, args)
-#     t = App(stdlib.tail, t0)
-#     assert t.eval() == stdlib.empty_list
-#     t1 = App(stdlib.tail, c)
-#     assert t1.eval() == t1
-#
-#
-# def test_index():
-#     c1 = Constant('c1')
-#     c2 = Constant('c2')
-#     ll = List([c1, c2])
-#     i0 = String('0')
-#     i1 = String('1')
-#     i2 = String('2')
-#     not_int = String('xxx')
-#     assert App(stdlib.index, List([ll, i0])).eval() == c1
-#     assert App(stdlib.index, List([ll, i1])).eval() == c2
-#     out_of_bound = App(stdlib.index, List([ll, i2]))
-#     assert out_of_bound.eval() == out_of_bound
-#     non_int_index = App(stdlib.index, List([ll, not_int]))
-#     assert non_int_index.eval() == non_int_index
-#     single_arg = App(stdlib.index, c1)
-#     assert single_arg.eval() == single_arg
-#
-#
+from lambda_term import App, Constant
+import list_term
+import lambda_term
+from data_term import String, Integer
+from list_term import List
+import record_term
+import stdlib
+
+
+def test_list():
+    c = lambda_term.constant('c')
+    d = lambda_term.constant('d')
+    t = stdlib.cons(c)(list_term.empty)
+    t1 = stdlib.head(t)
+    t2 = stdlib.cons(d)(t)
+    t3 = stdlib.tail(t2)
+    assert t.fully_eval().terms[0] == c.fully_eval()
+    assert t1.fully_eval() == c.fully_eval()
+    assert t2.fully_eval().terms == (d.remove_name(), c.remove_name())
+    assert t3.fully_eval() == t.fully_eval()
+    assert stdlib.index(t2)(Integer.named(0)).fully_eval() == d.fully_eval()
+    assert stdlib.index(t2)(Integer.named(1)).fully_eval() == c.fully_eval()
+    assert t3.fully_eval() == t.fully_eval()
+
+
 # def test_fold():
-#     c = Constant('c')
-#     var_x = NamedVariable.from_name('x')
-#     var_y = NamedVariable.from_name('y')
-#     arg = NamedList([var_x, var_y])
-#     body =
