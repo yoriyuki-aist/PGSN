@@ -346,7 +346,7 @@ class Closure:
             if arg_reduced is not None:
                 new_args = self.args[0:i] + (arg_reduced,) + self.args[i + 1:]
                 return self.evolve(args=new_args)
-        if isinstance(self.head, Builtin) and self.head.applicable_args(self.args):
+        if isinstance(self.head, BuiltinFunction) and self.head.applicable_args(self.args):
             reduced, rest = self.head.apply_args(self.args)
             return self.evolve(head=reduced, args=rest)
         else:
@@ -373,6 +373,9 @@ class Builtin(Term):
         reduced = self._apply_args(args)
         assert not reduced.is_named
         return reduced, args[self.arity:]
+
+    def _remove_name_with_context(self, context: list[str]) -> Term:
+        return evolve(self, is_named=False)
 
 
 @frozen
