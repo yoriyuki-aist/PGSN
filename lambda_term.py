@@ -144,7 +144,7 @@ class Variable(Term):
     def from_name(cls, name:str):
         return cls.named(name=name)
 
-    def evolve(self, num: int = None, name: str = None):
+    def evolve(self, num: int | None = None, name: str | None = None):
         if num is None and name is not None:
             return evolve(self, num=None, name=name, is_named=True)
         if num is not None and name is None:
@@ -370,7 +370,9 @@ class Builtin(Term):
 
     def apply_args(self, args: tuple[Term, ...]) -> tuple[Term, tuple[Term, ...]]:
         assert self.applicable_args(args)
-        return self._apply_args(args), args[self.arity:]
+        reduced = self._apply_args(args)
+        assert not reduced.is_named
+        return reduced, args[self.arity:]
 
 
 @frozen

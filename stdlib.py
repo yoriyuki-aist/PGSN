@@ -112,7 +112,7 @@ class Map(BuiltinFunction):
     arity = 2
 
     def _applicable_args(self, args: Sequence[Term]):
-        if not isinstance(args[2], List):
+        if not isinstance(args[1], List):
             return False
         return True
 
@@ -128,28 +128,24 @@ class Map(BuiltinFunction):
 map_term = Map.named()
 
 
-# @frozen
-# class Plus(BuiltinFunction):
-#     arity = 2
-#     name = 'Plus'
-#
-#     def _applicable_args(self, args: tuple[Term, ...]):
-#         return len(args) >= 2 and isinstance(args[0], Integer) and isinstance(args[0], Integer)
-#
-#     def _apply_args(self, args: tuple[Term, ...]):
-#         i1 = args[0].value
-#         i2 = args[1].value
-#         return data_term.integer(i1*i2)
-#
-#
-# plus = Plus.named()
-#
-#
-# _var_x = lambda_term.variable('x')
-# _var_y = lambda_term.variable('y')
-# _fun = lambda_term.lambda_abs(_var_x, lambda_term.lambda_abs(_var_y, plus(_var_x)(_var_y)))
-# _var_z = lambda_term.variable('z')
-# integer_sum = lambda_term.lambda_abs(_var_z, fold(_fun)(data_term.integer(0)))
+@frozen
+class Plus(BuiltinFunction):
+    arity = 2
+    name = 'Plus'
+
+    def _applicable_args(self, args: tuple[Term, ...]):
+        return len(args) >= 2 and isinstance(args[0], Integer) and isinstance(args[0], Integer)
+
+    def _apply_args(self, args: tuple[Term, ...]):
+        i1 = args[0].value
+        i2 = args[1].value
+        return data_term.Integer.nameless(value=i1+i2)
+
+
+plus = Plus.named()
+
+
+integer_sum = fold(plus)(data_term.integer(0))
 
 
 
