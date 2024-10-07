@@ -1,12 +1,11 @@
 from __future__ import annotations
 import helpers
 from typing import Sequence
-from attrs import field, frozen, evolve
-from lambda_term import Constant, BuiltinFunction, Abs, App, Term, Unary
-import lambda_term
+from attrs import frozen, evolve
+from lambda_term import BuiltinFunction, Term, Unary
 from record_term import Record
 from list_term import List
-from data_term import String, Integer
+from data_term import Integer
 import data_term
 
 

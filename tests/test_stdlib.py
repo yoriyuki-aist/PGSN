@@ -1,11 +1,6 @@
-import meta_info
-from lambda_term import App, Constant
 import list_term
 import lambda_term
-from data_term import String, Integer
 import data_term
-from list_term import List
-import record_term
 import stdlib
 
 
