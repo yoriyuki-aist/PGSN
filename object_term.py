@@ -2,8 +2,7 @@ from __future__ import annotations
 from typing import TypeAlias
 from attrs import field, frozen, evolve
 import helpers
-import lambda_term
-from lambda_term import Term, Unary, BuiltinFunction
+from lambda_term import Term, Unary
 from data_term import String
 from record_term import Record
 
@@ -11,25 +10,22 @@ ObjectTerm: TypeAlias = "ObjectTerm"
 ClassTerm: TypeAlias = "ClassTerm"
 
 
-# hack
-base_class = None
-
-
 @frozen
 class ObjectTerm(Unary):
-    instance: ClassTerm = field(default=base_class, validator=helpers.not_none)
+    # Hack: syntactically, instance is an optional argument but must be specified otherwise
+    # the runtime error occurs.
+    instance: ClassTerm = field(default=None, validator=helpers.not_none)
     _attributes: dict[str, Term] = field(default={})
-    _methods: dict[str, Term] = field(default={})
 
     def __attr_post_init__(self):
+        assert self.instance is not None
         assert all((t == self.is_named for _, t in self._attributes.items()))
-        assert all((t == self.is_named for _, t in self._methods.items()))
-        assert all((k not in self._methods for k, _ in self._attributes.items()))
-        assert all((k not in self._methods for k, _ in self._methods.items()))
+        assert all((t == self.is_named for _, t in self.instance.methods().items()))
+        assert self._attributes.keys() == self.instance.attributes().keys()
 
     @classmethod
-    def build(cls, is_named: bool, attributes: dict[str, Term], methods: dict[str, Term]):
-        return cls(is_named=is_named, attributes=attributes.copy(), methods=methods.copy())
+    def build(cls, is_named: bool, instance: ClassTerm, attributes: dict[str, Term]):
+        return instance.instantiate(is_named=is_named, attributes=attributes.copy())
 
     def evolve(self, is_named: bool | None = None,
                attributes: dict[str, Term] | None =None,
@@ -38,44 +34,50 @@ class ObjectTerm(Unary):
             is_named = self.is_named
         if attributes is None:
             attributes = self._attributes
-        if methods is None:
-            methods = self._methods
-        return evolve(self, is_named=is_named, attributes=attributes.copy(), methods=methods.copy())
+        return evolve(self, is_named=is_named, attributes=attributes.copy())
 
     def _applicable(self, arg:Term):
-        return isinstance(arg, String) and (arg.value in self._attributes or arg.value in self._methods)
+        return isinstance(arg, String) and (arg.value in self._attributes or arg.value in self.instance.methods())
 
     def _apply_arg(self, arg: String):
         label = arg.value
         if label in self._attributes:
             return self._attributes[label]
-        if label in self._methods:
-            return self._methods[label](self)
+        if label in self.instance.methods():
+            return self.instance.methods()[label](self)
 
     def is_instance(self, cls: ClassTerm):
         return self.instance.is_subclass(cls)
 
-    def has_type(self, cls):
-        return set(self._attributes.keys()).issubset(cls.attributes().keys) and \
-            set(self._methods.keys()).issubset(cls.methods().keys)
-
 
 @frozen
 class ClassTerm(Unary):
-    super: ClassTerm = field()
+    name: str | None = field(default=None)
+    super_class: ClassTerm = field(default=None)
     # attribute names and their defaults.  None means no default
     _attributes: dict[str, Term | None] = field(default={}, validator=helpers.not_none)
     _methods: dict[str, Term] = field(default={})
 
     def __attr_post_init__(self):
+        assert self.super_class is not None
         assert all((t is None or t == self.is_named for _, t in self._attributes.items()))
         assert all((t == self.is_named for _, t in self._methods.items()))
         assert all((k not in self._methods for k, _ in self._attributes.items()))
         assert all((k not in self._methods for k, _ in self._methods.items()))
 
     @classmethod
-    def built(cls, is_named: bool, attributes: dict[str, Term | None], methods: dict[str, Term]):
-        return cls(is_named=is_named, attributes=attributes.copy(), methods=methods.copy())
+    def build(cls,
+              is_named: bool,
+              super_class: ClassTerm,
+              attributes: dict[str, Term | None],
+              methods: dict[str, Term],
+              name: str | None = None,
+              ):
+        return cls(name=name,
+                   is_named=is_named,
+                   super_class=super_class,
+                   attributes=attributes.copy(),
+                   methods=methods.copy())
 
     def attributes(self):
         return self._attributes.copy()
@@ -84,15 +86,24 @@ class ClassTerm(Unary):
         return self._methods.copy()
 
     def evolve(self, is_named: bool | None = None,
+               name: str | None = None,
+               super_class: ClassTerm | None = None,
                attributes: dict[str, Term | None] | None =None,
                methods: dict[str, Term] = None):
         if is_named is None:
             is_named = self.is_named
+        if super_class is None:
+            super_class = self.super_class
         if attributes is None:
             attributes = self._attributes
         if methods is None:
             methods = self._methods
-        return evolve(self, is_named=is_named, attributes=attributes.copy(), methods=methods.copy())
+        return evolve(self,
+                      is_named=is_named,
+                      name=name,
+                      super_class=super_class,
+                      attributes=attributes.copy(),
+                      methods=methods.copy())
 
     def _applicable(self, arg: Term):
         if not isinstance(arg, Record):
@@ -120,8 +131,8 @@ class ClassTerm(Unary):
     def is_subclass(self, cls: ClassTerm):
         if self == cls:
             return True
-        if self.super is None:
+        if self.super_class is None:
             return False
-        return self.super.is_subclass(cls)
+        return self.super_class.is_subclass(cls)
 
 
