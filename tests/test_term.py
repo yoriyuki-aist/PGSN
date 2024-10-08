@@ -19,7 +19,7 @@ def test_var():
 
 def test_lambda_term_id():
     x = lambda_term.variable('x')
-    id_f = lambda_term.fun(x, x)
+    id_f = lambda_term.lambda_abs(x, x)
     t = id_f(id_f)
     assert t.eval() == id_f.eval()
 
@@ -27,7 +27,7 @@ def test_lambda_term_id():
 def test_lambda_term_const():
     c = lambda_term.constant('c')
     x = lambda_term.variable('x')
-    id_f = lambda_term.fun(x, c)
+    id_f = lambda_term.lambda_abs(x, c)
     t = id_f(c)
     assert t.eval() == c.eval()
 
@@ -43,7 +43,7 @@ class Id(lambda_term.Unary):
 
 
 def test_builtin():
-    id_f = Id.named(name='id').eval()
+    id_f = Id.named().eval()
     c = lambda_term.constant('c').eval()
     assert id_f.applicable_args((c,))
     assert id_f.apply_args((c,)) == (c, tuple())

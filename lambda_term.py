@@ -28,6 +28,10 @@ class Term(ABC):
     is_named: bool = field(validator=helpers.not_none)
 
     @classmethod
+    def build(cls, is_named: bool, **kwarg) -> Term:
+        return cls(is_named=is_named, **kwarg)
+
+    @classmethod
     def nameless(cls, **kwarg) -> Term:
         return cls(is_named=False, **kwarg)
 

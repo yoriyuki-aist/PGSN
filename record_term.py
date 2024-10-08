@@ -29,6 +29,9 @@ class Record(Unary):
             is_named = self.is_named
         return evolve(self, is_named=is_named, terms=terms)
 
+    def terms(self):
+        return self._terms.copy()
+
     def _eval_or_none(self):
         evaluated = ((label, t.eval_or_none()) for label, t in self._terms.items())
         if all(t is None for _, t in evaluated):
