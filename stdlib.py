@@ -1,12 +1,14 @@
 from __future__ import annotations
 import helpers
 from typing import Sequence
-from attrs import frozen, evolve
-from lambda_term import BuiltinFunction, Term, Unary
+from attrs import frozen, evolve, field
+from lambda_term import BuiltinFunction, Term, Unary, Variable
+import lambda_term
 from record_term import Record
 from list_term import List
 from data_term import Integer
 import data_term
+from object_term import ObjectTerm, ClassTerm
 
 
 def check_type_list(arg: Term, types: list):
@@ -20,6 +22,8 @@ def check_type_dict(arg: Term, types: dict):
         return False
     return helpers.check_type_list(arg.terms, types)
 
+
+# List functions
 
 @frozen
 class Cons(BuiltinFunction):
@@ -127,6 +131,7 @@ class Map(BuiltinFunction):
 map_term = Map.named()
 
 
+# Integer functions
 @frozen
 class Plus(BuiltinFunction):
     arity = 2
@@ -145,6 +150,73 @@ plus = Plus.named()
 
 
 integer_sum = fold(plus)(data_term.integer(0))
+
+
+# multi_arg function
+@frozen
+class MultiArgFunction(BuiltinFunction):
+    # Hack: arity has a default argument but the default value is invalid.
+    # The object must be created by build class method.
+    arity = field(default=0)
+    _keyword_args: dict[str, Term | None] = field(default={})
+    # Hack: syntactically, body is an optional argument but must be specified otherwise
+    # the runtime error occurs.
+    main: Term | None = field(default=None, validator=helpers.not_none)
+
+    def __attr_post_init__(self):
+        assert all((var.is_named == self.is_named for var in self.positional_variable))
+        assert all((var.is_named == self.is_named for var  in self._keyword_variable.keys()))
+        assert all((t is None or t.is_named == self.is_named for _, t in self._keyword_variable.items()))
+        assert self.main is not None
+        assert self.arity >= 1
+
+    @classmethod
+    def built(cls,
+              is_named: bool,
+              positional_variable: tuple[Variable, ...],
+              keyword_args: dict[str, Term | None],
+              body: Term):
+        arity = len(positional_variable) + 1
+        keywords = sorted(keyword_args.keys())
+        main = body
+        for key in keywords:
+            var = lambda_term.variable(key)
+            main = lambda_term.lambda_abs(var, main)
+        var_r = lambda_term.variable('r')
+        for key in reversed(keywords):
+            s = data_term.string(key)
+            main = main(var_r(s))
+        main = lambda_term.lambda_abs(var_r, main)
+        for var in reversed(positional_variable):
+            main = lambda_term.lambda_abs(var, main)
+        return cls(is_named=is_named,
+                   arity=len(positional_variable) + 1,
+                   keyword_args=keyword_args.copy(),
+                   main=main)
+
+    def _applicable_args(self, args: tuple[Term,...]) -> bool:
+        if not isinstance(args[self.arity-1], Record):
+            return False
+        r = args[self.arity-1].terms()
+        for k, v in self._keyword_args.items():
+            if v is None and k not in r:
+                return False
+        return True
+
+    def _apply_args(self, args: tuple[Term,]):
+        r = args[self.arity - 1].terms()
+        for k, v in self._keyword_args.items():
+            if k not in r and v is not None:
+                r[k] = v
+        assert set(self._keyword_args.keys()).issubset(set(r.keys()))
+        assert all(v is not None for v in r.values())
+        r_term = Record.named(terms=r)
+        t = self.main
+        for arg in args[:-1]:
+            t = t(arg)
+        return t(r_term)
+
+
 
 
 
