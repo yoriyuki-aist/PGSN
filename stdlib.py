@@ -217,6 +217,14 @@ class MultiArgFunction(BuiltinFunction):
         return t(r_term)
 
 
+def multi_arg_function(positional_vars: list[Variable], keyword_args: dict[str, Term | None], body: Term):
+    return MultiArgFunction.named(positional_vars =positional_vars,
+                                  keyword_args=keyword_args,
+                                  body=body)
+
+
+
+
 
 
 
