@@ -138,7 +138,7 @@ class Plus(BuiltinFunction):
     name = 'Plus'
 
     def _applicable_args(self, args: tuple[Term, ...]):
-        return len(args) >= 2 and isinstance(args[0], Integer) and isinstance(args[0], Integer)
+        return len(args) >= 2 and isinstance(args[0], Integer) and isinstance(args[1], Integer)
 
     def _apply_args(self, args: tuple[Term, ...]):
         i1 = args[0].value
@@ -171,12 +171,11 @@ class MultiArgFunction(BuiltinFunction):
         assert self.arity >= 1
 
     @classmethod
-    def built(cls,
+    def build(cls,
               is_named: bool,
-              positional_variable: tuple[Variable, ...],
+              positional_vars: tuple[Variable, ...],
               keyword_args: dict[str, Term | None],
               body: Term):
-        arity = len(positional_variable) + 1
         keywords = sorted(keyword_args.keys())
         main = body
         for key in keywords:
@@ -187,12 +186,17 @@ class MultiArgFunction(BuiltinFunction):
             s = data_term.string(key)
             main = main(var_r(s))
         main = lambda_term.lambda_abs(var_r, main)
-        for var in reversed(positional_variable):
+        for var in reversed(positional_vars):
             main = lambda_term.lambda_abs(var, main)
         return cls(is_named=is_named,
-                   arity=len(positional_variable) + 1,
+                   arity=len(positional_vars) + 1,
                    keyword_args=keyword_args.copy(),
                    main=main)
+
+    def _remove_name_with_context(self, context: list[str]) -> Term:
+        keyword_args = {k: t.remove_name_with_context(context) if t is not None else None for k, t in self._keyword_args.items()}
+        main = self.main.remove_name_with_context(context)
+        return self.evolve(is_named=False, keyword_args=keyword_args, main=main)
 
     def _applicable_args(self, args: tuple[Term,...]) -> bool:
         if not isinstance(args[self.arity-1], Record):
@@ -203,26 +207,29 @@ class MultiArgFunction(BuiltinFunction):
                 return False
         return True
 
-    def _apply_args(self, args: tuple[Term,]):
+    def _apply_args(self, args: tuple[Term,...]):
         r = args[self.arity - 1].terms()
         for k, v in self._keyword_args.items():
             if k not in r and v is not None:
                 r[k] = v
         assert set(self._keyword_args.keys()).issubset(set(r.keys()))
         assert all(v is not None for v in r.values())
-        r_term = Record.named(terms=r)
+        r_term = Record.nameless(terms=r)
         t = self.main
         for arg in args[:-1]:
             t = t(arg)
         return t(r_term)
 
 
-def multi_arg_function(positional_vars: list[Variable], keyword_args: dict[str, Term | None], body: Term):
-    return MultiArgFunction.named(positional_vars =positional_vars,
+def multi_arg_function(positional_vars: tuple[Variable,...], keyword_args: dict[str, Term | None], body: Term):
+    return MultiArgFunction.named(positional_vars=positional_vars,
                                   keyword_args=keyword_args,
                                   body=body)
 
 
+# let var = t1 in t2
+def let(var: Variable, t1: Term, t2: Term):
+    return (lambda_term.lambda_abs(var, t2))(t1)
 
 
 

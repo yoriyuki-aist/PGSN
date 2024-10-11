@@ -216,7 +216,7 @@ class Abs(Term):
 
     def _subst_or_none(self, var: int, term: Term) -> Term | None:
         term_shifted = term.shift(1, 0)
-        substituted = self.t.subst_or_none(var, term_shifted)
+        substituted = self.t.subst_or_none(var + 1, term_shifted)
         if substituted is None:
             return None
         else:
@@ -324,7 +324,7 @@ class Closure:
             head = self.head
         if args is None:
             args = self.args
-        return Closure.build(head=head, args=args)
+        return type(self).build(head=head, args=args)
 
     def to_term(self) -> Term:
         term = self.head
@@ -339,7 +339,7 @@ class Closure:
     # outermost leftmost reduction.
     def reduce_or_none(self) -> Closure | None:
         if isinstance(self.head, Abs) and len(self.args) > 0:
-            head_substituted = self.head.t.subst(0, self.args[0].shift(1, 0)).shift(-1, 0)
+            head_substituted = self.head.t.subst(0, self.args[0]).shift(-1, 0)
             return self.evolve(head=head_substituted, args=self.args[1:])
         if isinstance(self.head, BuiltinFunction) and self.head.applicable_args(self.args):
             reduced, rest = self.head.apply_args(self.args)

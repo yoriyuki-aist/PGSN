@@ -1,6 +1,7 @@
 import list_term
 import lambda_term
 import data_term
+import record_term
 import stdlib
 
 
@@ -44,3 +45,27 @@ def test_map():
     assert len(ll_1.fully_eval().terms) == 2
     assert ll_1.fully_eval().terms[0].value == 2
     assert ll_1.fully_eval().terms[1].value == 3
+
+
+def test_multi_arg_function():
+    x = lambda_term.variable('x')
+    y = lambda_term.variable('y')
+    a = lambda_term.variable('a')
+    b = lambda_term.variable('b')
+    default = data_term.integer(1)
+    f = stdlib.multi_arg_function((x, y), {'a': None, 'b': default},
+                                  stdlib.plus(x)(b)
+                                  )
+    f1 = stdlib.multi_arg_function((x,), {'a': None}, stdlib.plus(x)(a))
+    zero = data_term.integer(0)
+    one = data_term.integer(1)
+    two = data_term.integer(2)
+    three = data_term.integer(2)
+    r = record_term.record({'a': zero})
+    assert f1(one)(r).fully_eval().value == 1
+    assert f(one)(two)(r).fully_eval().value == 2
+    r1 = record_term.record({'a': zero, 'b': zero})
+    assert f(one)(two)(r1).fully_eval().value == 1
+    r2 = record_term.record({})
+    assert isinstance(f(one)(two)(r2).fully_eval(), lambda_term.App)
+

@@ -11,13 +11,17 @@ class Record(Unary):
     _terms: dict[str, Term] = \
         field(default={}, validator=helpers.not_none)
 
+    def __attr_post_init__(self):
+        assert all(isinstance(k, str) for k in self._terms.keys())
+        assert all(isinstance(t, Term) for t in self._terms.values())
+
     @classmethod
     def named(cls, terms: dict[str, Term]):
         return cls(is_named=True, terms=terms.copy())
 
     @classmethod
     def nameless(cls, terms: dict[str, Term]):
-        return cls(is_named=True, terms=terms.copy())
+        return cls(is_named=False, terms=terms.copy())
 
     def __attr_post_init__(self):
         assert len(self._terms) == 0 or all((t == self.is_named for k, t in self._terms.items()))
@@ -59,8 +63,12 @@ class Record(Unary):
         return self.evolve(terms=dict((label, t.remove_name_with_context(context)) for label, t in self._terms.items()),
                            is_named=False)
 
-    def _applicable(self, term: String):
+    def _applicable(self, term: Term):
         return isinstance(term, String) and term.value in self._terms
 
     def _apply_arg(self, term: String):
         return self._terms[term.value]
+
+
+def record(d: dict[str, Term]):
+    return Record.named(d)

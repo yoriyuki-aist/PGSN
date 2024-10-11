@@ -13,6 +13,7 @@ class List(Unary):
     name: str = 'List'
 
     def __attr_post_init__(self):
+        assert all(isinstance(t, Term) for t in self.terms)
         assert len(self.terms) == 0 or all((t == self.is_named for t in self.terms))
 
     def _eval_or_none(self):
