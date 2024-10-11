@@ -32,6 +32,17 @@ def test_lambda_term_const():
     assert t.eval() == c.eval()
 
 
+def test_lambda_term_nested():
+    x = lambda_term.variable('x')
+    y = lambda_term.variable('y')
+    z = lambda_term.variable('z')
+    c = lambda_term.constant('c')
+    d = lambda_term.constant('d')
+    p1 = lambda_term.lambda_abs(x, lambda_term.lambda_abs(y, x))
+    t = lambda_term.lambda_abs(y, lambda_term.lambda_abs(x, p1(x)(y)))
+    assert t(c)(d).fully_eval() == d.fully_eval()
+
+
 class Id(lambda_term.Unary):
     arity = 1
 

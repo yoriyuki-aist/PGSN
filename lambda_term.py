@@ -33,11 +33,11 @@ class Term(ABC):
 
     @classmethod
     def nameless(cls, **kwarg) -> Term:
-        return cls(is_named=False, **kwarg)
+        return cls.build(is_named=False, **kwarg)
 
     @classmethod
     def named(cls, **kwarg) -> Term:
-        return cls(is_named=True, **kwarg)
+        return cls.build(is_named=True, **kwarg)
 
     def evolve(self, **kwarg):
         return evolve(self, **kwarg)
@@ -324,7 +324,7 @@ class Closure:
             head = self.head
         if args is None:
             args = self.args
-        return Closure(head=head, args=args)
+        return Closure.build(head=head, args=args)
 
     def to_term(self) -> Term:
         term = self.head
@@ -335,24 +335,23 @@ class Closure:
     def stack(self, arg: Term):
         return self.evolve(args=self.args + (arg, ))
 
-    # If None is returned, the reduction is terminated.
+    # If None is returned, the reduction is terminated
+    # outermost leftmost reduction.
     def reduce_or_none(self) -> Closure | None:
+        if isinstance(self.head, Abs) and len(self.args) > 0:
+            head_substituted = self.head.t.subst(0, self.args[0].shift(1, 0)).shift(-1, 0)
+            return self.evolve(head=head_substituted, args=self.args[1:])
+        if isinstance(self.head, BuiltinFunction) and self.head.applicable_args(self.args):
+            reduced, rest = self.head.apply_args(self.args)
+            return self.evolve(head=reduced, args=rest)
         head_reduced = self.head.eval_or_none()
         if head_reduced is not None:
-            return evolve(self, head=head_reduced)
-        if len(self.args) == 0:
-            return None
-        if isinstance(self.head, Abs):
-            head_substituted = self.head.t.subst(0, self.args[0].shift(1, 0))
-            return self.evolve(head=head_substituted, args=self.args[1:])
+            return self.evolve(head=head_reduced)
         for i in range(len(self.args)):
             arg_reduced = self.args[i].eval_or_none()
             if arg_reduced is not None:
                 new_args = self.args[0:i] + (arg_reduced,) + self.args[i + 1:]
                 return self.evolve(args=new_args)
-        if isinstance(self.head, BuiltinFunction) and self.head.applicable_args(self.args):
-            reduced, rest = self.head.apply_args(self.args)
-            return self.evolve(head=reduced, args=rest)
         else:
             return None
 
