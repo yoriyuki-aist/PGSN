@@ -69,3 +69,11 @@ def test_multi_arg_function():
     r2 = record_term.record({})
     assert isinstance(f(one)(two)(r2).fully_eval(), lambda_term.App)
 
+
+def test_let():
+    x = lambda_term.variable('x')
+    identity = lambda_term.lambda_abs(x, x)
+    t = x(x)
+    t1 = stdlib.let(x, identity, t)
+    assert t1.fully_eval() == identity.fully_eval()
+
