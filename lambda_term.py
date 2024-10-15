@@ -357,7 +357,9 @@ class Closure:
 
 
 class Builtin(Term):
+    # hack.  the default is an invalid value
     arity: int = field(validator=[helpers.not_none, helpers.non_negative])
+    name: str = field(validator=helpers.not_none)
 
     @abstractmethod
     def _applicable_args(self, args: tuple[Term, ...]) -> bool:

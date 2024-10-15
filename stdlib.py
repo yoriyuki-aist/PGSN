@@ -214,7 +214,7 @@ class MultiArgFunction(BuiltinFunction):
                 r[k] = v
         assert set(self._keyword_args.keys()).issubset(set(r.keys()))
         assert all(v is not None for v in r.values())
-        r_term = Record.nameless(terms=r)
+        r_term = Record.nameless(attributes=r)
         t = self.main
         for arg in args[:-1]:
             t = t(arg)
