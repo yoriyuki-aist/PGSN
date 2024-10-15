@@ -6,7 +6,7 @@ from lambda_term import BuiltinFunction, Term, Unary, Variable
 import lambda_term
 from record_term import Record
 from list_term import List
-from data_term import Integer
+from data_term import Integer, Boolean
 import data_term
 from object_term import ObjectTerm, ClassTerm
 
@@ -230,6 +230,39 @@ def multi_arg_function(positional_vars: tuple[Variable,...], keyword_args: dict[
 # let var = t1 in t2
 def let(var: Variable, t1: Term, t2: Term):
     return (lambda_term.lambda_abs(var, t2))(t1)
+
+
+# Boolean
+
+class IfThenElse(BuiltinFunction):
+    arity=3
+    name='IfThenElse'
+
+    def _applicable_args(self, terms: tuple[Term,...]):
+        return isinstance(terms[0], Boolean)
+
+    def _apply_args(self, terms: tuple[Term,...]):
+        b = terms[0].value
+        return terms[1] if b else terms[2]
+
+
+if_then_else = IfThenElse.named()
+
+
+# guard b t only progresses b is true
+class Guard(BuiltinFunction):
+    arity=2
+    name='Guard'
+
+    def _applicable_args(self, terms: tuple[Term,...]):
+        return isinstance(terms[0], Boolean) and terms[0].value
+
+    def _apply_args(self, terms: tuple[Term,...]):
+        return terms[1]
+
+
+guard = Guard.named()
+
 
 
 

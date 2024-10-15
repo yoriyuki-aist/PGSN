@@ -75,12 +75,20 @@ class Integer(Data[int]):
         return cls.named(value=int(string))
 
 
+class Boolean(Data[bool]):
+    pass
+
+
 def string(s: str):
     return String.named(value=s)
 
 
 def integer(i: int):
     return Integer.named(value=i)
+
+
+def boolean(b: bool):
+    return Boolean.named(value=b)
 
 
 
