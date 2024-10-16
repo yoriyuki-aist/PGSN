@@ -77,3 +77,14 @@ def test_let():
     t1 = stdlib.let(x, identity, t)
     assert t1.fully_eval() == identity.fully_eval()
 
+
+def test_bool():
+    c = lambda_term.constant('c')
+    d = lambda_term.constant('d')
+    true = data_term.boolean(True)
+    false = data_term.boolean(False)
+    assert stdlib.if_then_else(true)(c)(d).fully_eval() == c.fully_eval()
+    assert stdlib.if_then_else(false)(c)(d).fully_eval() == d.fully_eval()
+    assert stdlib.guard(true)(c).fully_eval() == c.fully_eval()
+    assert stdlib.guard(false)(c).fully_eval() != c.fully_eval()
+

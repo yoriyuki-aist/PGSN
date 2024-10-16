@@ -235,8 +235,8 @@ def let(var: Variable, t1: Term, t2: Term):
 # Boolean
 
 class IfThenElse(BuiltinFunction):
-    arity=3
-    name='IfThenElse'
+    arity = 3
+    name = 'IfThenElse'
 
     def _applicable_args(self, terms: tuple[Term,...]):
         return isinstance(terms[0], Boolean)
