@@ -1,6 +1,6 @@
 from __future__ import annotations
 from typing import TypeAlias
-from attrs import field, frozen, evolve
+from attrs import field, frozen
 import helpers
 from lambda_term import Term, Unary, BuiltinFunction
 from data_term import String
@@ -46,26 +46,6 @@ class ClassTerm(Unary):
 
     def methods(self):
         return self._methods.copy()
-
-    # def evolve(self, is_named: bool | None = None,
-    #            name: str | None = None,
-    #            super_class: ClassTerm | None = None,
-    #            attributes: dict[str, Term | None] | None =None,
-    #            methods: dict[str, Term] = None):
-    #     if is_named is None:
-    #         is_named = self.is_named
-    #     if super_class is None:
-    #         super_class = self.super_class
-    #     if attributes is None:
-    #         attributes = self._attributes
-    #     if methods is None:
-    #         methods = self._methods
-    #     return evolve(self,
-    #                   is_named=is_named,
-    #                   name=name,
-    #                   super_class=super_class,
-    #                   attributes=attributes.copy(),
-    #                   methods=methods.copy())
 
     def _applicable(self, arg: Term):
         if not isinstance(arg, Record):
@@ -176,14 +156,6 @@ class ObjectTerm(Unary):
                    attributes=attrs,
                    parent=parent)
 
-    # def evolve(self, is_named: bool | None = None,
-    #            attributes: dict[str, Term] | None =None,
-    #            methods: dict[str, Term] = None):
-    #     if is_named is None:
-    #         is_named = self.is_named
-    #     if attributes is None:
-    #         attributes = self._attributes
-    #     return evolve(self, is_named=is_named, attributes=attributes.copy())
     def _applicable(self, arg:Term):
         if not isinstance(arg, String):
             return False
