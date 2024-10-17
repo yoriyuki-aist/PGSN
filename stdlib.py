@@ -44,7 +44,7 @@ cons = Cons.named()
 class Head(Unary):
     name = 'Head'
 
-    def _applicable(self, arg: List):
+    def _applicable(self, arg: Term):
         return isinstance(arg, List) and len(arg.terms) >= 1
 
     def _apply_arg(self, arg: List) -> Term:
@@ -58,7 +58,7 @@ head = Head.named()
 class Tail(Unary):
     name = 'Tail'
 
-    def _applicable(self, arg: List):
+    def _applicable(self, arg: Term):
         return isinstance(arg, List) and len(arg.terms) >= 1
 
     def _apply_arg(self, arg: List) -> List:
@@ -75,7 +75,7 @@ class Index(BuiltinFunction):
     def _applicable_args(self, args: Sequence[Term]):
         return isinstance(args[0], List) and isinstance(args[1], Integer)
 
-    def _apply_args(self, args: tuple[Term]) -> Term:
+    def _apply_args(self, args: tuple[Term,...]) -> Term:
         return args[0].terms[args[1].value]
 
 
