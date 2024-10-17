@@ -269,17 +269,17 @@ class App(Term):
         else:
             assert False
 
-    def to_closure(self) -> Closure:
+    def to_context(self) -> Context:
         if isinstance(self.t1, App):
-            return self.t1.to_closure().stack(self.t2)
+            return self.t1.to_context().stack(self.t2)
         else:
-            return Closure.build(head=self.t1, args=(self.t2,))
+            return Context.build(head=self.t1, args=(self.t2,))
 
     def _eval_or_none(self):
         if isinstance(self.t1, App):
-            c = self.t1.to_closure().stack(self.t2)
+            c = self.t1.to_context().stack(self.t2)
         else:
-            c = Closure.build(head=self.t1, args=(self.t2,))
+            c = Context.build(head=self.t1, args=(self.t2,))
         c_reduced = c.reduce_or_none()
         if c_reduced is None:
             return None
@@ -308,7 +308,7 @@ class App(Term):
 
 # leftmost, outermost reduction
 @frozen
-class Closure:
+class Context:
     head: Term = field(validator=helpers.not_none)
     args: tuple[Term,...] = field(default=(), validator=helpers.not_none)
 
@@ -337,7 +337,7 @@ class Closure:
 
     # If None is returned, the reduction is terminated
     # outermost leftmost reduction.
-    def reduce_or_none(self) -> Closure | None:
+    def reduce_or_none(self) -> Context | None:
         if isinstance(self.head, Abs) and len(self.args) > 0:
             head_substituted = self.head.t.subst(0, self.args[0]).shift(-1, 0)
             return self.evolve(head=head_substituted, args=self.args[1:])
