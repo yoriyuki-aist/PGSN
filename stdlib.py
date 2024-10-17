@@ -20,7 +20,7 @@ def check_type_list(arg: Term, types: list):
 def check_type_dict(arg: Term, types: dict):
     if not isinstance(arg, Record):
         return False
-    return helpers.check_type_list(arg.terms, types)
+    return helpers.check_type_list(arg.attributes, types)
 
 
 # List functions
@@ -201,14 +201,14 @@ class MultiArgFunction(BuiltinFunction):
     def _applicable_args(self, args: tuple[Term,...]) -> bool:
         if not isinstance(args[self.arity-1], Record):
             return False
-        r = args[self.arity-1].terms()
+        r = args[self.arity-1].attributes()
         for k, v in self._keyword_args.items():
             if v is None and k not in r:
                 return False
         return True
 
     def _apply_args(self, args: tuple[Term,...]):
-        r = args[self.arity - 1].terms()
+        r = args[self.arity - 1].attributes()
         for k, v in self._keyword_args.items():
             if k not in r and v is not None:
                 r[k] = v

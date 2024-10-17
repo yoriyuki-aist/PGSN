@@ -33,7 +33,7 @@ class Record(Unary):
             is_named = self.is_named
         return evolve(self, is_named=is_named, attributes=attributes)
 
-    def terms(self):
+    def attributes(self):
         return self._attributes.copy()
 
     def _eval_or_none(self):
