@@ -329,6 +329,23 @@ class ListLabels(Unary):
 list_labels = ListLabels.named()
 
 
+class OverwriteRecord(BuiltinFunction):
+    arity = 2
+    name = "OverwriteRecord"
+
+    def _applicable_args(self, terms: tuple[Term,...]):
+        return isinstance(terms[0], Record) and isinstance(terms[1], Record)
+
+    def _apply_args(self, terms: tuple[Term,...]):
+        r1 = terms[0].attributes()
+        r2 = terms[1].attributes()
+        for k, t in r1.items():
+            r2[k] = t
+        return Record.build(is_named=self.is_named, attributes=r2)
+
+
+overwrite_record = OverwriteRecord.named()
+
 
 
 

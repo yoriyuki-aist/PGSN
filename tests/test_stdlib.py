@@ -105,4 +105,10 @@ def test_record():
     assert stdlib.has_label(stdlib.remove_attribute(r)(b))(a).fully_eval().value
     assert not stdlib.has_label(stdlib.remove_attribute(r)(b))(b).fully_eval().value
     assert stdlib.list_labels(r).fully_eval() == list_term.List.named(terms=(a, b)).fully_eval()
+    r1 = record_term.record({'c': two})
+    assert stdlib.overwrite_record(r1)(r)(a).fully_eval().value == 0
+    assert stdlib.overwrite_record(r1)(r)(c).fully_eval().value == 2
+    r2 = record_term.record({'b': two})
+    assert stdlib.overwrite_record(r2)(r)(b).fully_eval().value == 2
+
 
