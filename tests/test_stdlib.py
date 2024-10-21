@@ -88,3 +88,21 @@ def test_bool():
     assert stdlib.guard(true)(c).fully_eval() == c.fully_eval()
     assert stdlib.guard(false)(c).fully_eval() != c.fully_eval()
 
+
+def test_record():
+    zero = data_term.integer(0)
+    one = data_term.integer(1)
+    two = data_term.integer(2)
+    a = data_term.string('a')
+    b = data_term.string('b')
+    c = data_term.string('c')
+    r = stdlib.add_attribute(stdlib.empty_record)(a)(zero)
+    r = stdlib.add_attribute(r)(b)(one)
+    assert isinstance(r.fully_eval(), record_term.Record)
+    assert r(b).fully_eval().value == 1
+    assert stdlib.has_label(r)(b).fully_eval().value
+    assert not stdlib.has_label(r)(c).fully_eval().value
+    assert stdlib.has_label(stdlib.remove_attribute(r)(b))(a).fully_eval().value
+    assert not stdlib.has_label(stdlib.remove_attribute(r)(b))(b).fully_eval().value
+    assert stdlib.list_labels(r).fully_eval() == list_term.List.named(terms=(a, b)).fully_eval()
+

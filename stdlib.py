@@ -6,8 +6,9 @@ from lambda_term import BuiltinFunction, Term, Unary, Variable
 import lambda_term
 from record_term import Record
 from list_term import List
-from data_term import Integer, Boolean
+from data_term import Integer, Boolean, String
 import data_term
+import record_term
 from object_term import ObjectTerm, ClassTerm
 
 
@@ -262,6 +263,74 @@ class Guard(BuiltinFunction):
 
 
 guard = Guard.named()
+
+
+# Record
+empty_record = record_term.record({})
+
+
+class HasLabel(BuiltinFunction):
+    arity = 2
+    name = 'HasLabel'
+
+    def _applicable_args(self, terms: tuple[Term,...]):
+        return isinstance(terms[0], Record) and isinstance(terms[1], String)
+
+    def _apply_args(self, terms: tuple[Record, String]):
+        return Boolean.build(is_named=self.is_named, value= terms[1].value in terms[0].attributes())
+
+
+has_label = HasLabel.named()
+
+
+class AddAttribute(BuiltinFunction):
+    arity = 3
+    name = 'AddAttribute'
+
+    def _applicable_args(self, terms: tuple[Term,...]):
+        return isinstance(terms[0], Record) and isinstance(terms[1], String)
+
+    def _apply_args(self, terms: tuple[Term,...]):
+        attrs = terms[0].attributes()
+        attrs[terms[1].value] = terms[2]
+        return Record.build(is_named=self.is_named, attributes=attrs)
+
+
+add_attribute = AddAttribute.named()
+
+
+class RemoveAttribute(BuiltinFunction):
+    arity = 2
+    name = 'RemoveAttribute'
+
+    def _applicable_args(self, terms: tuple[Term,...]):
+        return isinstance(terms[0], Record) and isinstance(terms[1], String)
+
+    def _apply_args(self, terms: tuple[Term,...]):
+        attrs = terms[0].attributes()
+        del attrs[terms[1].value]
+        return Record.build(is_named=self.is_named, attributes=attrs)
+
+
+remove_attribute = RemoveAttribute.named()
+
+
+class ListLabels(Unary):
+    name = 'ListLabels'
+
+    def _applicable(self, term: Term):
+        return isinstance(term, Record)
+
+    def _apply_arg(self, term: Term):
+        labels = map(lambda l: String(is_named=self.is_named, value=l), term.attributes())
+        return List.build(is_named=self.is_named, terms=tuple(labels))
+
+
+list_labels = ListLabels.named()
+
+
+
+
 
 
 
