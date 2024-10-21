@@ -91,5 +91,10 @@ def boolean(b: bool):
     return Boolean.named(value=b)
 
 
+true = boolean(True)
+false = boolean(False)
+
+
+
 
 
