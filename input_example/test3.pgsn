@@ -1,1 +1,0 @@
-goal("goal1", strat("strategy1", {goal("goal21", ev("evdence21"))}))
