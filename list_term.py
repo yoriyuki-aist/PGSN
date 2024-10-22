@@ -50,5 +50,9 @@ class List(Unary):
         return self.terms[term.value]
 
 
-# Constant
+# lambda term for API
 empty = List.named(terms=tuple())
+
+
+def list_term(terms: tuple[Term,...]):
+    return List.named(terms=terms)

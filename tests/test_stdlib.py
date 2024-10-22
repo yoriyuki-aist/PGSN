@@ -3,6 +3,7 @@ import lambda_term
 import data_term
 import record_term
 import stdlib
+from stdlib import lambda_abs, lambda_abs_vars, lambda_abs_keywords
 
 
 def test_list():
@@ -53,10 +54,9 @@ def test_multi_arg_function():
     a = lambda_term.variable('a')
     b = lambda_term.variable('b')
     default = data_term.integer(1)
-    f = stdlib.multi_arg_function((x, y), {'a': None, 'b': default},
-                                  stdlib.plus(x)(b)
-                                  )
-    f1 = stdlib.multi_arg_function((x,), {'a': None}, stdlib.plus(x)(a))
+    defaults = record_term.record( {'b': default},)
+    f = lambda_abs_vars((x, y), lambda_abs_keywords(('a', 'b'), defaults, stdlib.plus(x)(b)))
+    f1 = lambda_abs(x, lambda_abs_keywords(('a',), stdlib.empty_record, stdlib.plus(x)(a)))
     zero = data_term.integer(0)
     one = data_term.integer(1)
     two = data_term.integer(2)
@@ -67,7 +67,7 @@ def test_multi_arg_function():
     r1 = record_term.record({'a': zero, 'b': zero})
     assert f(one)(two)(r1).fully_eval().value == 1
     r2 = record_term.record({})
-    assert isinstance(f(one)(two)(r2).fully_eval(), lambda_term.App)
+    assert isinstance(f1(one)(two)(r2).fully_eval(), lambda_term.App)
 
 
 def test_let():
