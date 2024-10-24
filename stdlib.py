@@ -196,12 +196,6 @@ class MultiArgFunction(BuiltinFunction):
         return t(r_term)
 
 
-def multi_arg_function(positional_vars: tuple[Variable,...], keyword_args: dict[str, Term | None], body: Term):
-    return MultiArgFunction.named(positional_vars=positional_vars,
-                                  keyword_args=keyword_args,
-                                  body=body)
-
-
 class IfThenElse(BuiltinFunction):
     arity = 3
     name = 'IfThenElse'
@@ -235,7 +229,7 @@ class Equal(BuiltinFunction):
         return all((not isinstance(arg, App) and not isinstance(arg, Abs) for arg in args))
 
     def _apply_args(self, args: tuple[Term,...]):
-        return args[0] == args[1]
+        return Boolean.build(is_named=self.is_named, value=args[0] == args[1])
 
 
 class HasLabel(BuiltinFunction):
@@ -312,11 +306,6 @@ _label = lambda_term.variable('label')
 
 undefined = lambda_term.constant('undefined')
 
-# fixed point operator
-fix = lambda_abs(_f,
-                 lambda_abs(_x, _f(_x(_x)))(lambda_abs(_x, _f(_x(_x))))
-                 )
-
 
 # let var = t1 in t2
 def let(var: Variable, t1: Term, t2: Term):
@@ -330,19 +319,11 @@ def let_vars(assigns: tuple[tuple[Variable, Term],...], t: Term):
     return t
 
 
-# List related
-cons = Cons.named()
-head = Head.named()
-tail = Tail.named()
-index = Index.named()
-fold = Fold.named()
-map_term = Map.named()
-
-
-# Integer related
-plus = Plus.named()
-integer_sum = fold(plus)(data_term.integer(0))
-
+# fixed point operator
+# fixed point operator
+fix = lambda_abs(_f,
+                 lambda_abs(_x, _f(_x(_x)))(lambda_abs(_x, _f(_x(_x))))
+                 )
 
 # Boolean related
 true = data_term.boolean(True)
@@ -354,13 +335,38 @@ boolean_and = lambda_abs_vars(
     (_x, _y),
     if_then_else(_x)(_y)(false)
 )
-
 boolean_or = lambda_abs_vars(
     (_x, _y),
     if_then_else(_x)(true)(_y)
 )
-
 boolean_not = lambda_abs(_x, if_then_else(_x)(false)(true))
+
+equal = Equal.named()
+
+
+# Integer related
+plus = Plus.named()
+
+
+# List related
+cons = Cons.named()
+head = Head.named()
+tail = Tail.named()
+index = Index.named()
+#fold = Fold.named()
+map_term = Map.named()
+
+_elem = lambda_term.variable('elem')
+_list = lambda_term.variable('list')
+_acc = lambda_term.variable('acc')
+_foldr = lambda_term.variable('_foldr')
+_F = lambda_abs_vars((_foldr, _f, _acc, _list),
+                     if_then_else(equal(_list)(list_term.empty))
+                     (_acc)
+                     (_f(head(_list))(_foldr(_f)(_acc)(tail(_list))) )
+                     )
+foldr = fix(_F)
+fold = foldr
 
 list_all = lambda_abs_vars(
     (_x, _y),
@@ -371,8 +377,7 @@ list_all = lambda_abs_vars(
     )
 )
 
-equal = Equal.named()
-
+integer_sum = fold(plus)(data_term.integer(0))
 
 # Record
 empty_record = record_term.record({})

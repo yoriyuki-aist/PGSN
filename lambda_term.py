@@ -1,7 +1,7 @@
 from __future__ import annotations
 from typing import TypeAlias
 from abc import ABC, abstractmethod
-from attrs import field, frozen, evolve
+from attrs import field, frozen, evolve, define
 from meta_info import MetaInfo
 import meta_info as meta
 import helpers
@@ -64,7 +64,7 @@ class Term(ABC):
         return evaluated
 
     # FIXME: Use closures as the intermediate steps, not terms
-    def fully_eval(self, step=1000) -> Term | None:
+    def fully_eval(self, step=1000) -> Term:
         t = self if not self.is_named else self.remove_name()
         for _ in range(step):
             t_reduced = t.eval_or_none()
@@ -72,7 +72,7 @@ class Term(ABC):
             if t_reduced is None:
                 return t
             t = t_reduced
-        return None
+        return t
 
     @abstractmethod
     def _shift(self, num: int, cutoff: int) -> Term:
