@@ -392,7 +392,7 @@ overwrite_record = OverwriteRecord.named()
 def lambda_abs_keywords(keywords: tuple[str,...],
                        defaults: Record,
                        body: Term) -> Term:
-    keywords = sorted(keywords)
+    keywords = tuple(sorted(keywords))
     variables = tuple((lambda_term.variable(k) for k in keywords))
     t = lambda_abs_vars(variables, body)
     _args = lambda_term.variable('args')
