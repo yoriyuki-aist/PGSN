@@ -307,53 +307,6 @@ class App(Term):
 
 
 # leftmost, outermost reduction
-@frozen
-class Context:
-    head: Term = field(validator=helpers.not_none)
-    args: tuple[Term,...] = field(default=(), validator=helpers.not_none)
-
-    @classmethod
-    def build(cls, head, args):
-        if isinstance(head, App):
-            return cls.build(head=head.t1, args=(head.t2,) + args)
-        else:
-            return cls(head=head, args=args)
-
-    def evolve(self, head=None, args=None):
-        if head is None:
-            head = self.head
-        if args is None:
-            args = self.args
-        return type(self).build(head=head, args=args)
-
-    def to_term(self) -> Term:
-        term = self.head
-        for arg in self.args:
-            term = term(arg)
-        return term
-
-    def stack(self, arg: Term):
-        return self.evolve(args=self.args + (arg, ))
-
-    # If None is returned, the reduction is terminated
-    # outermost leftmost reduction.
-    def reduce_or_none(self) -> Context | None:
-        if isinstance(self.head, Abs) and len(self.args) > 0:
-            head_substituted = self.head.t.subst(0, self.args[0]).shift(-1, 0)
-            return self.evolve(head=head_substituted, args=self.args[1:])
-        if isinstance(self.head, BuiltinFunction) and self.head.applicable_args(self.args):
-            reduced, rest = self.head.apply_args(self.args)
-            return self.evolve(head=reduced, args=rest)
-        head_reduced = self.head.eval_or_none()
-        if head_reduced is not None:
-            return self.evolve(head=head_reduced)
-        for i in range(len(self.args)):
-            arg_reduced = self.args[i].eval_or_none()
-            if arg_reduced is not None:
-                new_args = self.args[0:i] + (arg_reduced,) + self.args[i + 1:]
-                return self.evolve(args=new_args)
-        else:
-            return None
 
 
 class Builtin(Term):
@@ -447,6 +400,55 @@ class Unary(BuiltinFunction, ABC):
 
     def _apply_args(self, args: tuple[Term, ...]):
         return self._apply_arg(args[0])
+
+
+@frozen
+class Context:
+    head: Term = field(validator=helpers.not_none)
+    args: tuple[Term,...] = field(default=(), validator=helpers.not_none)
+
+    @classmethod
+    def build(cls, head, args):
+        if isinstance(head, App):
+            return cls.build(head=head.t1, args=(head.t2,) + args)
+        else:
+            return cls(head=head, args=args)
+
+    def evolve(self, head=None, args=None):
+        if head is None:
+            head = self.head
+        if args is None:
+            args = self.args
+        return type(self).build(head=head, args=args)
+
+    def to_term(self) -> Term:
+        term = self.head
+        for arg in self.args:
+            term = term(arg)
+        return term
+
+    def stack(self, arg: Term):
+        return self.evolve(args=self.args + (arg, ))
+
+    # If None is returned, the reduction is terminated
+    # outermost leftmost reduction.
+    def reduce_or_none(self) -> Context | None:
+        if isinstance(self.head, Abs) and len(self.args) > 0:
+            head_substituted = self.head.t.subst(0, self.args[0]).shift(-1, 0)
+            return self.evolve(head=head_substituted, args=self.args[1:])
+        if isinstance(self.head, BuiltinFunction) and self.head.applicable_args(self.args):
+            reduced, rest = self.head.apply_args(self.args)
+            return self.evolve(head=reduced, args=rest)
+        head_reduced = self.head.eval_or_none()
+        if head_reduced is not None:
+            return self.evolve(head=head_reduced)
+        for i in range(len(self.args)):
+            arg_reduced = self.args[i].eval_or_none()
+            if arg_reduced is not None:
+                new_args = self.args[0:i] + (arg_reduced,) + self.args[i + 1:]
+                return self.evolve(args=new_args)
+        else:
+            return None
 
 
 # Interface by lambda terms
