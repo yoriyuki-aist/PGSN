@@ -51,8 +51,8 @@ class List(Unary):
 
 
 # lambda term for API
-empty = List.named(terms=tuple())
+empty: List = List.named(terms=tuple())
 
 
-def list_term(terms: tuple[Term,...]):
+def list_term(terms: tuple[Term,...]) -> List:
     return List.named(terms=terms)

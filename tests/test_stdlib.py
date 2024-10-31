@@ -3,7 +3,7 @@ import lambda_term
 import data_term
 import record_term
 import stdlib
-from stdlib import lambda_abs, lambda_abs_vars, lambda_abs_keywords
+from stdlib import lambda_abs, lambda_abs_vars, lambda_abs_keywords, plus, let
 
 
 def test_list():
@@ -78,6 +78,23 @@ def test_let():
     assert t1.fully_eval() == identity.fully_eval()
 
 
+def test_let2():
+    x = lambda_term.variable('x')
+    y = lambda_term.variable('y')
+    one = data_term.integer(1)
+    two = data_term.integer(2)
+    t = lambda_abs_vars((x, y),
+                        (lambda_abs(x, plus(x)(y))(plus(x)(x)))
+                        )
+    assert t(one)(two).fully_eval().value == 4
+    t1 = lambda_abs_vars((x, y),
+                         let(x, plus(x)(x),
+                             plus(x)(y)
+                             )
+                         )
+    assert t1(one)(two).fully_eval().value == 4
+
+
 def test_bool():
     c = lambda_term.constant('c')
     d = lambda_term.constant('d')
@@ -106,9 +123,83 @@ def test_record():
     assert not stdlib.has_label(stdlib.remove_attribute(r)(b))(b).fully_eval().value
     assert stdlib.list_labels(r).fully_eval() == list_term.List.named(terms=(a, b)).fully_eval()
     r1 = record_term.record({'c': two})
-    assert stdlib.overwrite_record(r1)(r)(a).fully_eval().value == 0
-    assert stdlib.overwrite_record(r1)(r)(c).fully_eval().value == 2
+    assert stdlib.overwrite_record(r)(r1)(a).fully_eval().value == 0
+    assert stdlib.overwrite_record(r)(r1)(c).fully_eval().value == 2
     r2 = record_term.record({'b': two})
-    assert stdlib.overwrite_record(r2)(r)(b).fully_eval().value == 2
+    assert stdlib.overwrite_record(r)(r2)(b).fully_eval().value == 2
 
 
+class Id(lambda_term.Unary):
+    arity = 1
+
+    def _applicable(self, args):
+        return True
+
+    def _apply_arg(self, arg):
+        return arg
+
+
+def test_lambda_term_nested2():
+    id_f = Id.named()
+    x = lambda_term.variable('x')
+    y = lambda_term.variable('y')
+    z = lambda_term.variable('z')
+    a = lambda_term.constant('a')
+    b = lambda_term.constant('b')
+    label = data_term.string('ll')
+    t = lambda_term.lambda_abs_vars(
+        (x, y),
+        stdlib.let(x, id_f(x), id_f(x)))
+    assert t(a)(b).fully_eval() == a.fully_eval()
+    t2 = lambda_abs_vars((x, y), t(x)(y))
+    assert t2(a)(b).fully_eval() == a.fully_eval()
+    t3 = lambda_term.lambda_abs_vars(
+        (x, y),
+        stdlib.let(
+            x, stdlib.add_attribute(stdlib.empty_record)(label)(x),
+            stdlib.overwrite_record(x)(y)
+        )
+    )
+    r = record_term.record({'a': a})
+    label_a = data_term.string('a')
+    assert t3(stdlib.empty_record)(r)(label_a).fully_eval() == a.fully_eval()
+    assert stdlib.has_label(t3(stdlib.empty_record)(r))(label).fully_eval()
+    assert t3(stdlib.empty_record)(r)(label).fully_eval() == stdlib.empty_record.fully_eval()
+
+
+x = lambda_term.variable('x')
+y = lambda_term.variable('y')
+z = lambda_term.variable('z')
+f = lambda_term.lambda_abs(x, x)
+label_a = data_term.string('a')
+label_f = data_term.string('f')
+r1 = record_term.record({'a': stdlib.true})
+r2 = record_term.record({'f': f})
+r3 = stdlib.add_attribute(stdlib.empty_record)(label_a)(stdlib.true)
+r4 = stdlib.add_attribute(stdlib.empty_record)(label_f)(f)
+
+
+def test_overwrite_record_fun():
+    assert set(stdlib.overwrite_record(r1)(stdlib.empty_record).\
+        fully_eval().attributes().keys()) == {'a'}
+    assert set(stdlib.overwrite_record(r2)(stdlib.empty_record).\
+        fully_eval().attributes().keys()) == {'f'}
+
+
+eta = lambda_term.lambda_abs_vars((y, z), stdlib.overwrite_record(y)(z))
+
+
+def test_overwrite_record_eta():
+    assert set(eta(r1)(stdlib.empty_record). \
+               fully_eval().attributes().keys()) == {'a'}
+    assert set(eta(r2)(stdlib.empty_record). \
+               fully_eval().attributes().keys()) == {'f'}
+
+
+def test_add_attribute_record_fun():
+    assert set(r3.fully_eval().attributes().keys()) == {'a'}
+    assert set(r4.fully_eval().attributes().keys()) == {'f'}
+    assert set(stdlib.add_attribute(r3)(label_a)(stdlib.true). \
+               fully_eval().attributes().keys()) == {'a'}
+    assert set(stdlib.add_attribute(r4)(label_f)(f). \
+               fully_eval().attributes().keys()) == {'f'}

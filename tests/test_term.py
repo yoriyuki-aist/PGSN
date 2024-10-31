@@ -1,5 +1,9 @@
 import meta_info
 import lambda_term
+from lambda_term import *
+import stdlib
+from stdlib import let
+import data_term
 # import string_term
 # import list_term
 # import record_term
@@ -71,3 +75,39 @@ def test_builtin():
     assert id_f.applicable_args((c,))
     assert id_f.apply_args((c,)) == (c, tuple())
     assert id_f(c).eval() == c
+
+
+def test_higher_order2():
+    x = lambda_term.variable('x')
+    y = lambda_term.variable('y')
+    f = lambda_term.variable('f')
+    a = lambda_term.constant('a')
+    id = lambda_abs(x, x)
+    g = lambda_term.lambda_abs_vars((f, y), f(y))
+    assert g(id)(a).fully_eval() == a.fully_eval()
+    h = lambda_term.lambda_abs(f, f(a))
+    assert h(id).fully_eval() == a.fully_eval()
+
+
+def test_eta_expansion():
+    x = lambda_term.variable('x')
+    y = lambda_term.variable('y')
+    one = data_term.integer(1)
+    two = data_term.integer(2)
+    assert stdlib.plus(one)(two).fully_eval().value == 3
+    f = lambda_abs_vars((x, y), stdlib.plus(x)(y))
+    assert f(one)(two).fully_eval().value == 3
+
+
+def test_self_reference():
+    x = lambda_term.variable('x')
+    y = lambda_term.variable('y')
+    one = data_term.integer(1)
+    two = data_term.integer(2)
+    f = lambda_abs_vars((x, y),
+                        let(
+                            x, stdlib.plus(x)(y),
+                            stdlib.plus(x)(y)
+                        ))
+    assert f(one)(two).fully_eval().value == 5
+

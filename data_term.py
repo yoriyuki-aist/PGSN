@@ -79,15 +79,15 @@ class Boolean(Data[bool]):
     pass
 
 
-def string(s: str):
+def string(s: str) -> String:
     return String.named(value=s)
 
 
-def integer(i: int):
+def integer(i: int) -> Integer:
     return Integer.named(value=i)
 
 
-def boolean(b: bool):
+def boolean(b: bool) -> Boolean:
     return Boolean.named(value=b)
 
 

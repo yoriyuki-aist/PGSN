@@ -240,7 +240,9 @@ class HasLabel(BuiltinFunction):
         return isinstance(terms[0], Record) and isinstance(terms[1], String)
 
     def _apply_args(self, terms: tuple[Record, String]):
-        return Boolean.build(is_named=self.is_named, value= terms[1].value in terms[0].attributes())
+        k = terms[1].value
+        b = k in terms[0].attributes()
+        return Boolean.build(is_named=self.is_named, value=b)
 
 
 class AddAttribute(BuiltinFunction):
@@ -290,9 +292,10 @@ class OverwriteRecord(BuiltinFunction):
     def _apply_args(self, terms: tuple[Term,...]):
         r1 = terms[0].attributes()
         r2 = terms[1].attributes()
-        for k, t in r1.items():
-            r2[k] = t
-        return Record.build(is_named=self.is_named, attributes=r2)
+        r = r1
+        for k, t in r2.items():
+            r[k] = t
+        return Record.build(is_named=self.is_named, attributes=r)
 
 
 # Interface by lambda terms
@@ -390,8 +393,8 @@ overwrite_record = OverwriteRecord.named()
 
 # keyword_args_function
 def lambda_abs_keywords(keywords: tuple[str,...],
-                       defaults: Record,
-                       body: Term) -> Term:
+                        defaults: Record,
+                        body: Term) -> Term:
     keywords = tuple(sorted(keywords))
     variables = tuple((lambda_term.variable(k) for k in keywords))
     t = lambda_abs_vars(variables, body)
@@ -399,7 +402,7 @@ def lambda_abs_keywords(keywords: tuple[str,...],
     for k in keywords:
         _k = data_term.string(k)
         t = t(_args(_k))
-    return lambda_abs(_args, let(_args, overwrite_record(_args)(defaults), t))
+    return lambda_abs(_args, let(_args, overwrite_record(defaults)(_args), t))
 
 
 
