@@ -106,6 +106,13 @@ def test_bool():
     assert stdlib.guard(false)(c).fully_eval() != c.fully_eval()
 
 
+def test_equal():
+    s1 = data_term.string('s1')
+    s2 = data_term.string('s2')
+    assert stdlib.equal(s1)(s1).fully_eval().value
+    assert not stdlib.equal(s1)(s2).fully_eval().value
+
+
 def test_record():
     zero = data_term.integer(0)
     one = data_term.integer(1)

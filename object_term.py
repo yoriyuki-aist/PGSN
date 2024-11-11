@@ -57,7 +57,8 @@ _class = lambda_term.variable('_class')
 define_class = lambda_abs_vars(
     (_name, _parent, _attrs),
     let(_attrs, add_attribute(_attrs)(_label_class_name)(_name),
-        inherit(_parent)(_attrs)
+        let(_attrs,  add_attribute(_attrs)(_label_parent)(_parent),
+            inherit(_parent)(_attrs))
         )
     )
 
@@ -78,26 +79,16 @@ is_obj = lambda_abs(_obj, has_label(_obj)(_label_instance))
 _class1 = lambda_term.variable('_class1')
 _class2 = lambda_term.variable('_class2')
 _is_subclass = lambda_term.variable('_is_subclass')
-is_subclass = stdlib.fix(lambda_abs(_is_subclass,
-                                    lambda_abs_vars(
-                                        (_class1, _class2),
-                                        boolean_or
-                                        (equal(_class1(_label_class_name))(_class2(_label_class_name)))
-                                        (if_then_else
-                                         (equal
-                                          (_class1(_label_class_name))
-                                          (data_term.string('_BaseClass'))
-                                          )
-                                         (false)
-                                         (_is_subclass
-                                          (_class1(_label_parent))
-                                          (_class2)
-                                          )
-                                         )
-                                    )
-                                    )
-                         )
-
+is_subclass = stdlib.fix\
+    (lambda_abs_vars((_is_subclass, _class1, _class2),
+                     if_then_else
+                     (has_label(_class1)(_label_class_name))
+                     (boolean_or
+                      (equal(_class1(_label_class_name))
+                       (_class2(_label_class_name)))
+                        (_is_subclass(_class1(_label_parent))(_class2)))
+                     (false)
+                     ))
 
 _is_instance = lambda_term.variable('_is_instance')
 is_instance = lambda_abs_vars(

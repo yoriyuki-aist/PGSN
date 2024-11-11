@@ -3,7 +3,7 @@ import lambda_term
 import data_term
 import record_term
 import object_term
-from object_term import method, inherit, instantiate
+from object_term import method, inherit, instantiate, is_subclass, is_instance
 import stdlib
 from stdlib import let
 from lambda_term import lambda_abs, lambda_abs_vars
@@ -63,7 +63,20 @@ def test_class():
     assert isinstance(cls.fully_eval(), object_term.ClassTerm)
     assert object_term.is_class(cls)
     assert set(cls.fully_eval().attributes().keys()) == \
-           {'a', 'value', '_object', '_class_name'}
+           {'a', 'value', '_object', '_class_name', '_parent'}
+
+
+cls1 = object_term.define_class(name1)(cls)(stdlib.empty_record)
+
+
+def test_subclass():
+    assert isinstance(cls1.fully_eval(), object_term.ClassTerm)
+    assert object_term.is_class(cls1)
+    assert set(cls1.fully_eval().attributes().keys()) == \
+           {'a', 'value', '_object', '_class_name', '_parent'}
+    assert is_subclass(cls)(cls).fully_eval().value
+    assert is_subclass(cls1)(cls).fully_eval().value
+    assert not is_subclass(object_term.base_class)(cls).fully_eval().value
 
 
 attrs2 = record_term.record({'b': b, 'c': c})
@@ -78,6 +91,8 @@ def test_obj_instance():
     assert isinstance(obj1.fully_eval(), object_term.ObjectTerm)
     assert isinstance(obj2.fully_eval(), object_term.ObjectTerm)
     assert isinstance(obj3.fully_eval(), object_term.ObjectTerm)
+    assert is_instance(obj1)(cls).fully_eval().value
+    assert not is_instance(obj1)(cls1).fully_eval().value
 
 
 def test_obj_is_obj():
@@ -94,15 +109,15 @@ def test_obj_labels():
            {'_instance'}
     assert set(stdlib.
                overwrite_record(cls)(new_attr).fully_eval().attributes().keys()) == \
-           {'a', 'value', '_object', '_class_name', '_instance'}
+           {'a', 'value', '_object', '_class_name', '_instance', '_parent'}
     assert set(inherit(cls)(new_attr).fully_eval().attributes().keys()) == \
-           {'a', 'value', '_object', '_class_name', '_instance'}
+           {'a', 'value', '_object', '_class_name', '_instance', '_parent'}
     assert set(obj1.fully_eval().attributes().keys()) == \
-           {'a', 'value', '_object', '_class_name', '_instance'}
+           {'a', 'value', '_object', '_class_name', '_instance', '_parent'}
     assert set(obj2.fully_eval().attributes().keys()) == \
-           {'a', 'value', '_object', '_class_name', '_instance', 'b', 'c'}
+           {'a', 'value', '_object', '_class_name', '_instance', 'b', 'c', '_parent'}
     assert set(obj3.fully_eval().attributes().keys()) == \
-           {'a', 'value', '_object', '_class_name', '_instance', 'b', 'c', 'a'}
+           {'a', 'value', '_object', '_class_name', '_instance', 'b', 'c', 'a', '_parent'}
 
 
 def test_obj_values():
@@ -127,4 +142,4 @@ inherit_x = lambda_abs_vars((parent, attrs),
 
 def test_obj_labels_x():
     assert set(inherit_x(cls)(new_attr).fully_eval().attributes().keys()) == \
-           {'a', 'value', '_object', '_class_name', '_instance'}
+           {'a', 'value', '_object', '_class_name', '_instance', '_parent'}
