@@ -1,5 +1,4 @@
 import lambda_term
-import record_term
 import stdlib
 from stdlib import lambda_abs, lambda_abs_vars, lambda_abs_keywords, plus, let
 
@@ -52,19 +51,19 @@ def test_multi_arg_function():
     a = lambda_term.variable('a')
     b = lambda_term.variable('b')
     default = stdlib.integer(1)
-    defaults = record_term.record( {'b': default},)
+    defaults = stdlib.record({'b': default}, )
     f = lambda_abs_vars((x, y), lambda_abs_keywords(('a', 'b'), defaults, stdlib.plus(x)(b)))
     f1 = lambda_abs(x, lambda_abs_keywords(('a',), stdlib.empty_record, stdlib.plus(x)(a)))
     zero = stdlib.integer(0)
     one = stdlib.integer(1)
     two = stdlib.integer(2)
     three = stdlib.integer(2)
-    r = record_term.record({'a': zero})
+    r = stdlib.record({'a': zero})
     assert f1(one)(r).fully_eval().value == 1
     assert f(one)(two)(r).fully_eval().value == 2
-    r1 = record_term.record({'a': zero, 'b': zero})
+    r1 = stdlib.record({'a': zero, 'b': zero})
     assert f(one)(two)(r1).fully_eval().value == 1
-    r2 = record_term.record({})
+    r2 = stdlib.record({})
     assert isinstance(f1(one)(two)(r2).fully_eval(), lambda_term.App)
 
 
@@ -120,17 +119,17 @@ def test_record():
     c = stdlib.string('c')
     r = stdlib.add_attribute(stdlib.empty_record)(a)(zero)
     r = stdlib.add_attribute(r)(b)(one)
-    assert isinstance(r.fully_eval(), record_term.Record)
+    assert isinstance(r.fully_eval(), lambda_term.Record)
     assert r(b).fully_eval().value == 1
     assert stdlib.has_label(r)(b).fully_eval().value
     assert not stdlib.has_label(r)(c).fully_eval().value
     assert stdlib.has_label(stdlib.remove_attribute(r)(b))(a).fully_eval().value
     assert not stdlib.has_label(stdlib.remove_attribute(r)(b))(b).fully_eval().value
     assert stdlib.list_labels(r).fully_eval() == lambda_term.List.named(terms=(a, b)).fully_eval()
-    r1 = record_term.record({'c': two})
+    r1 = stdlib.record({'c': two})
     assert stdlib.overwrite_record(r)(r1)(a).fully_eval().value == 0
     assert stdlib.overwrite_record(r)(r1)(c).fully_eval().value == 2
-    r2 = record_term.record({'b': two})
+    r2 = stdlib.record({'b': two})
     assert stdlib.overwrite_record(r)(r2)(b).fully_eval().value == 2
 
 
@@ -165,7 +164,7 @@ def test_lambda_term_nested2():
             stdlib.overwrite_record(x)(y)
         )
     )
-    r = record_term.record({'a': a})
+    r = stdlib.record({'a': a})
     label_a = stdlib.string('a')
     assert t3(stdlib.empty_record)(r)(label_a).fully_eval() == a.fully_eval()
     assert stdlib.has_label(t3(stdlib.empty_record)(r))(label).fully_eval()
@@ -178,8 +177,8 @@ z = lambda_term.variable('z')
 f = lambda_term.lambda_abs(x, x)
 label_a = stdlib.string('a')
 label_f = stdlib.string('f')
-r1 = record_term.record({'a': stdlib.true})
-r2 = record_term.record({'f': f})
+r1 = stdlib.record({'a': stdlib.true})
+r2 = stdlib.record({'f': f})
 r3 = stdlib.add_attribute(stdlib.empty_record)(label_a)(stdlib.true)
 r4 = stdlib.add_attribute(stdlib.empty_record)(label_f)(f)
 

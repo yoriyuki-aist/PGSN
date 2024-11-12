@@ -1,8 +1,6 @@
 import meta_info
 import lambda_term
-from lambda_term import lambda_abs_vars, String, Integer
-from record_term import Record
-import record_term
+from lambda_term import lambda_abs_vars, String, Integer, Record
 import stdlib
 from stdlib import let
 
@@ -11,7 +9,7 @@ def test_record():
     x = lambda_term.constant('x')
     y = lambda_term.constant('y')
     z = lambda_term.constant('z')
-    r = record_term.record({'x': x, 'y': y, 'z': z})
+    r = stdlib.record({'x': x, 'y': y, 'z': z})
     k1 = stdlib.string('x')
     k2 = stdlib.string('w')
     assert r(k1).eval() == x.eval()
@@ -26,7 +24,7 @@ b = lambda_term.constant('b')
 c = lambda_term.constant('c')
 label_1 = stdlib.string('l1')
 label_2 = stdlib.string('l2')
-r1 = record_term.record({'l1': a})
+r1 = stdlib.record({'l1': a})
 r2 = stdlib.add_attribute(stdlib.empty_record)(label_2)(r1)
 r3 = stdlib.overwrite_record(r1)(r2)
 def test_self_reference1():

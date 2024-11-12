@@ -3,10 +3,8 @@ import helpers
 from typing import Sequence
 from attrs import frozen, evolve, field
 from lambda_term import BuiltinFunction, Term, Unary, Variable, lambda_abs, lambda_abs_vars, Abs, App, String, Integer, \
-    Boolean, List
+    Boolean, List, Record
 import lambda_term
-from record_term import Record
-import record_term
 
 
 def check_type_list(arg: Term, types: list):
@@ -390,7 +388,11 @@ def integer(i: int) -> Integer:
 integer_sum = fold(plus)(integer(0))
 
 # Record
-empty_record = record_term.record({})
+def record(d: dict[str, Term]):
+    return Record.named(attributes=d)
+
+
+empty_record = record({})
 has_label = HasLabel.named()
 list_labels = ListLabels.named()
 add_attribute = AddAttribute.named()

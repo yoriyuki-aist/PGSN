@@ -1,5 +1,4 @@
 import lambda_term
-import record_term
 import object_term
 from object_term import method, inherit, instantiate, is_subclass, is_instance
 import stdlib
@@ -12,13 +11,13 @@ b = stdlib.string('b')
 c = stdlib.string('c')
 name = stdlib.string('Class')
 name1 = stdlib.string('Child')
-defaults = record_term.record({'a': stdlib.boolean(True)})
+defaults = stdlib.record({'a': stdlib.boolean(True)})
 self = lambda_term.variable('self')
 get_value_term = lambda_term.lambda_abs(self,
                                         stdlib.if_then_else(self(a))(self(b))(self(c))
                                         )
 # attrs1 = inherit(defaults)(record_term.record({'value': get_value_term}))
-attrs1 = record_term.record({'a': stdlib.true, 'value': get_value_term})
+attrs1 = stdlib.record({'a': stdlib.true, 'value': get_value_term})
 cls = object_term.define_class(name)(object_term.base_class)(attrs1)
 label_instance = stdlib.string('_instance')
 test = stdlib.string('test')
@@ -41,7 +40,7 @@ def test_inherit():
     c = stdlib.string('c')
     r = stdlib.add_attribute(stdlib.empty_record)(a)(zero)
     r = stdlib.add_attribute(r)(b)(one)
-    r1 = record_term.record({'c': two})
+    r1 = stdlib.record({'c': two})
     r2 = object_term.inherit(r)(r1)
     r3 = object_term.inherit(r)(id(r1))
     r4 = stdlib.add_attribute(r1)(b)(zero)
@@ -77,8 +76,8 @@ def test_subclass():
     assert not is_subclass(object_term.base_class)(cls).fully_eval().value
 
 
-attrs2 = record_term.record({'b': b, 'c': c})
-attrs3 = record_term.record({'a': stdlib.boolean(False), 'b': b, 'c': c})
+attrs2 = stdlib.record({'b': b, 'c': c})
+attrs3 = stdlib.record({'a': stdlib.boolean(False), 'b': b, 'c': c})
 label_value = stdlib.string('value')
 obj1 = object_term.instantiate(cls)(stdlib.empty_record)
 obj2 = object_term.instantiate(cls)(attrs2)

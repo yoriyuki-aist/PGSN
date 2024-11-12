@@ -1,11 +1,4 @@
-from attrs import field, frozen
-import helpers
-from lambda_term import Term, Unary, BuiltinFunction, String, List
-import lambda_term
-from record_term import Record
-import record_term
 import stdlib
-from lambda_term import lambda_abs, lambda_abs_vars
 from stdlib import *
 
 ClassTerm = Record
