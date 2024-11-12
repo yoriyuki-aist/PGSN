@@ -1,14 +1,14 @@
 import meta_info
 import pgsn_term
-from pgsn_term import lambda_abs_vars, String, Integer, Record
+from pgsn_term import String, Integer, Record
 import stdlib
-from stdlib import let
+from stdlib import let, lambda_abs_vars
 
 
 def test_record():
-    x = pgsn_term.constant('x')
-    y = pgsn_term.constant('y')
-    z = pgsn_term.constant('z')
+    x = stdlib.constant('x')
+    y = stdlib.constant('y')
+    z = stdlib.constant('z')
     r = stdlib.record({'x': x, 'y': y, 'z': z})
     k1 = stdlib.string('x')
     k2 = stdlib.string('w')
@@ -16,12 +16,12 @@ def test_record():
     assert r(k2).eval_or_none() is None
 
 
-x = pgsn_term.variable('x')
-y = pgsn_term.variable('y')
-z = pgsn_term.variable('z')
-a = pgsn_term.variable('a')
-b = pgsn_term.constant('b')
-c = pgsn_term.constant('c')
+x = stdlib.variable('x')
+y = stdlib.variable('y')
+z = stdlib.variable('z')
+a = stdlib.variable('a')
+b = stdlib.constant('b')
+c = stdlib.constant('c')
 label_1 = stdlib.string('l1')
 label_2 = stdlib.string('l2')
 r1 = stdlib.record({'l1': a})

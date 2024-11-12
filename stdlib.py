@@ -2,8 +2,8 @@ from __future__ import annotations
 import helpers
 from typing import Sequence
 from attrs import frozen, evolve, field
-from pgsn_term import BuiltinFunction, Term, Unary, Variable, lambda_abs, lambda_abs_vars, Abs, App, String, Integer, \
-    Boolean, List, Record
+from pgsn_term import BuiltinFunction, Term, Unary, Variable, Abs, App, String, Integer, \
+    Boolean, List, Record, Constant
 import pgsn_term
 
 
@@ -149,15 +149,15 @@ class MultiArgFunction(BuiltinFunction):
         keywords = sorted(keyword_args.keys())
         main = body
         for key in keywords:
-            var = pgsn_term.variable(key)
-            main = pgsn_term.lambda_abs(var, main)
-        var_r = pgsn_term.variable('r')
+            var = variable(key)
+            main = lambda_abs(var, main)
+        var_r = variable('r')
         for key in reversed(keywords):
             s = string(key)
             main = main(var_r(s))
-        main = pgsn_term.lambda_abs(var_r, main)
+        main = lambda_abs(var_r, main)
         for var in reversed(positional_vars):
-            main = pgsn_term.lambda_abs(var, main)
+            main = lambda_abs(var, main)
         return cls(is_named=is_named,
                    arity=len(positional_vars) + 1,
                    keyword_args=keyword_args.copy(),
@@ -295,19 +295,28 @@ class OverwriteRecord(BuiltinFunction):
 
 # Interface by lambda terms
 # identifiers starting _ is reserved for internal uses.
-_x = pgsn_term.variable('x')
-_y = pgsn_term.variable('y')
-_z = pgsn_term.variable('z')
-_w = pgsn_term.variable('w')
-_f = pgsn_term.variable('f')
-_label = pgsn_term.variable('label')
+def variable(name: str) -> Variable:
+    return Variable.named(name=name)
 
-undefined = pgsn_term.constant('undefined')
+
+_x = variable('x')
+_y = variable('y')
+_z = variable('z')
+_w = variable('w')
+_f = variable('f')
+_label = variable('label')
+
+
+def constant(name: str) -> Constant:
+    return Constant.named(name=name)
+
+
+undefined = constant('undefined')
 
 
 # let var = t1 in t2
 def let(var: Variable, t1: Term, t2: Term):
-    return (pgsn_term.lambda_abs(var, t2))(t1)
+    return (lambda_abs(var, t2))(t1)
 
 
 # let v1 = t1, v2 = t2, ... in t
@@ -319,6 +328,10 @@ def let_vars(assigns: tuple[tuple[Variable, Term],...], t: Term):
 
 # fixed point operator
 # fixed point operator
+def lambda_abs(v: Variable, t: Term) -> Term:
+    return Abs.named(v=v, t=t)
+
+
 fix = lambda_abs(_f,
                  lambda_abs(_x, _f(_x(_x)))(lambda_abs(_x, _f(_x(_x))))
                  )
@@ -332,6 +345,14 @@ true = boolean(True)
 false = boolean(False)
 if_then_else = IfThenElse.named()
 guard = Guard.named()
+
+
+def lambda_abs_vars(vs: tuple[Variable,...], t) -> Term:
+    t1 = t
+    for v in reversed(vs):
+        t1 = lambda_abs(v, t1)
+    return t1
+
 
 boolean_and = lambda_abs_vars(
     (_x, _y),
@@ -358,10 +379,10 @@ index = Index.named()
 #fold = Fold.named()
 map_term = Map.named()
 
-_elem = pgsn_term.variable('elem')
-_list = pgsn_term.variable('list')
-_acc = pgsn_term.variable('acc')
-_foldr = pgsn_term.variable('_foldr')
+_elem = variable('elem')
+_list = variable('list')
+_acc = variable('acc')
+_foldr = variable('_foldr')
 empty: List = List.named(terms=tuple())
 _F = lambda_abs_vars((_foldr, _f, _acc, _list),
                      if_then_else(equal(_list)(empty))
@@ -405,9 +426,9 @@ def lambda_abs_keywords(keywords: tuple[str,...],
                         defaults: Record,
                         body: Term) -> Term:
     keywords = tuple(sorted(keywords))
-    variables = tuple((pgsn_term.variable(k) for k in keywords))
+    variables = tuple((variable(k) for k in keywords))
     t = lambda_abs_vars(variables, body)
-    _args = pgsn_term.variable('args')
+    _args = variable('args')
     for k in keywords:
         _k = string(k)
         t = t(_args(_k))

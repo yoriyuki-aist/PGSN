@@ -1,8 +1,9 @@
 import meta_info
 import pgsn_term
-from pgsn_term import *
 import stdlib
-from stdlib import let
+from stdlib import let, lambda_abs, lambda_abs_vars
+
+
 # import string_term
 # import list_term
 # import record_term
@@ -21,40 +22,40 @@ def test_var():
 
 
 def test_pgsn_term_id():
-    x = pgsn_term.variable('x')
-    id_f = pgsn_term.lambda_abs(x, x)
+    x = stdlib.variable('x')
+    id_f = stdlib.lambda_abs(x, x)
     t = id_f(id_f)
     assert t.eval() == id_f.eval()
 
 
 def test_pgsn_term_const():
-    c = pgsn_term.constant('c')
-    x = pgsn_term.variable('x')
-    id_f = pgsn_term.lambda_abs(x, c)
+    c = stdlib.constant('c')
+    x = stdlib.variable('x')
+    id_f = stdlib.lambda_abs(x, c)
     t = id_f(c)
     assert t.eval() == c.eval()
 
 
 def test_pgsn_term_nested():
-    x = pgsn_term.variable('x')
-    y = pgsn_term.variable('y')
-    z = pgsn_term.variable('z')
-    c = pgsn_term.constant('c')
-    d = pgsn_term.constant('d')
-    p1 = pgsn_term.lambda_abs(x, pgsn_term.lambda_abs(y, x))
-    t = pgsn_term.lambda_abs(y, pgsn_term.lambda_abs(x, p1(x)(y)))
+    x = stdlib.variable('x')
+    y = stdlib.variable('y')
+    z = stdlib.variable('z')
+    c = stdlib.constant('c')
+    d = stdlib.constant('d')
+    p1 = stdlib.lambda_abs(x, stdlib.lambda_abs(y, x))
+    t = stdlib.lambda_abs(y, stdlib.lambda_abs(x, p1(x)(y)))
     assert t(c)(d).fully_eval() == d.fully_eval()
 
 
 def test_pgsn_term_higher_order():
-    x = pgsn_term.variable('x')
-    y = pgsn_term.variable('y')
-    z = pgsn_term.variable('z')
-    c = pgsn_term.constant('c')
-    d = pgsn_term.constant('d')
-    p1 = pgsn_term.lambda_abs(x, pgsn_term.lambda_abs(y, x))
+    x = stdlib.variable('x')
+    y = stdlib.variable('y')
+    z = stdlib.variable('z')
+    c = stdlib.constant('c')
+    d = stdlib.constant('d')
+    p1 = stdlib.lambda_abs(x, stdlib.lambda_abs(y, x))
     assert p1(c)(d).fully_eval() == c.fully_eval()
-    t = pgsn_term.lambda_abs(y, y(c)(d))(p1)
+    t = stdlib.lambda_abs(y, y(c)(d))(p1)
     assert t.fully_eval() == c.fully_eval()
 
 
@@ -70,27 +71,27 @@ class Id(pgsn_term.Unary):
 
 def test_builtin():
     id_f = Id.named().eval()
-    c = pgsn_term.constant('c').eval()
+    c = stdlib.constant('c').eval()
     assert id_f.applicable_args((c,))
     assert id_f.apply_args((c,)) == (c, tuple())
     assert id_f(c).eval() == c
 
 
 def test_higher_order2():
-    x = pgsn_term.variable('x')
-    y = pgsn_term.variable('y')
-    f = pgsn_term.variable('f')
-    a = pgsn_term.constant('a')
+    x = stdlib.variable('x')
+    y = stdlib.variable('y')
+    f = stdlib.variable('f')
+    a = stdlib.constant('a')
     id = lambda_abs(x, x)
-    g = pgsn_term.lambda_abs_vars((f, y), f(y))
+    g = stdlib.lambda_abs_vars((f, y), f(y))
     assert g(id)(a).fully_eval() == a.fully_eval()
-    h = pgsn_term.lambda_abs(f, f(a))
+    h = stdlib.lambda_abs(f, f(a))
     assert h(id).fully_eval() == a.fully_eval()
 
 
 def test_eta_expansion():
-    x = pgsn_term.variable('x')
-    y = pgsn_term.variable('y')
+    x = stdlib.variable('x')
+    y = stdlib.variable('y')
     one = stdlib.integer(1)
     two = stdlib.integer(2)
     assert stdlib.plus(one)(two).fully_eval().value == 3
@@ -99,8 +100,8 @@ def test_eta_expansion():
 
 
 def test_self_reference():
-    x = pgsn_term.variable('x')
-    y = pgsn_term.variable('y')
+    x = stdlib.variable('x')
+    y = stdlib.variable('y')
     one = stdlib.integer(1)
     two = stdlib.integer(2)
     f = lambda_abs_vars((x, y),

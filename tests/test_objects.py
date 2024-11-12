@@ -2,9 +2,7 @@ import pgsn_term
 import object_term
 from object_term import method, inherit, instantiate, is_subclass, is_instance
 import stdlib
-from stdlib import let
-from pgsn_term import lambda_abs, lambda_abs_vars
-
+from stdlib import let, lambda_abs, lambda_abs_vars
 
 a = stdlib.string('a')
 b = stdlib.string('b')
@@ -12,10 +10,10 @@ c = stdlib.string('c')
 name = stdlib.string('Class')
 name1 = stdlib.string('Child')
 defaults = stdlib.record({'a': stdlib.boolean(True)})
-self = pgsn_term.variable('self')
-get_value_term = pgsn_term.lambda_abs(self,
-                                        stdlib.if_then_else(self(a))(self(b))(self(c))
-                                        )
+self = stdlib.variable('self')
+get_value_term = stdlib.lambda_abs(self,
+                                   stdlib.if_then_else(self(a))(self(b))(self(c))
+                                   )
 # attrs1 = inherit(defaults)(record_term.record({'value': get_value_term}))
 attrs1 = stdlib.record({'a': stdlib.true, 'value': get_value_term})
 cls = object_term.define_class(name)(object_term.base_class)(attrs1)
@@ -30,8 +28,8 @@ def test_test():
 
 
 def test_inherit():
-    x = pgsn_term.variable('x')
-    id = pgsn_term.lambda_abs(x, x)
+    x = stdlib.variable('x')
+    id = stdlib.lambda_abs(x, x)
     zero = stdlib.integer(0)
     one = stdlib.integer(1)
     two = stdlib.integer(2)
@@ -131,8 +129,8 @@ def test_obj_methods():
     assert method(obj3)(label_value).fully_eval().value == 'c'
 
 
-parent = pgsn_term.variable('parent')
-attrs = pgsn_term.variable("attrs")
+parent = stdlib.variable('parent')
+attrs = stdlib.variable("attrs")
 inherit_x = lambda_abs_vars((parent, attrs),
                           stdlib.overwrite_record(parent)(attrs))
 

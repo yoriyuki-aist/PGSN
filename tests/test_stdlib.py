@@ -4,8 +4,8 @@ from stdlib import lambda_abs, lambda_abs_vars, lambda_abs_keywords, plus, let
 
 
 def test_list():
-    c = pgsn_term.constant('c')
-    d = pgsn_term.constant('d')
+    c = stdlib.constant('c')
+    d = stdlib.constant('d')
     t = stdlib.cons(c)(stdlib.empty)
     t1 = stdlib.head(t)
     t2 = stdlib.cons(d)(t)
@@ -46,10 +46,10 @@ def test_map():
 
 
 def test_multi_arg_function():
-    x = pgsn_term.variable('x')
-    y = pgsn_term.variable('y')
-    a = pgsn_term.variable('a')
-    b = pgsn_term.variable('b')
+    x = stdlib.variable('x')
+    y = stdlib.variable('y')
+    a = stdlib.variable('a')
+    b = stdlib.variable('b')
     default = stdlib.integer(1)
     defaults = stdlib.record({'b': default}, )
     f = lambda_abs_vars((x, y), lambda_abs_keywords(('a', 'b'), defaults, stdlib.plus(x)(b)))
@@ -68,16 +68,16 @@ def test_multi_arg_function():
 
 
 def test_let():
-    x = pgsn_term.variable('x')
-    identity = pgsn_term.lambda_abs(x, x)
+    x = stdlib.variable('x')
+    identity = stdlib.lambda_abs(x, x)
     t = x(x)
     t1 = stdlib.let(x, identity, t)
     assert t1.fully_eval() == identity.fully_eval()
 
 
 def test_let2():
-    x = pgsn_term.variable('x')
-    y = pgsn_term.variable('y')
+    x = stdlib.variable('x')
+    y = stdlib.variable('y')
     one = stdlib.integer(1)
     two = stdlib.integer(2)
     t = lambda_abs_vars((x, y),
@@ -93,8 +93,8 @@ def test_let2():
 
 
 def test_bool():
-    c = pgsn_term.constant('c')
-    d = pgsn_term.constant('d')
+    c = stdlib.constant('c')
+    d = stdlib.constant('d')
     true = stdlib.boolean(True)
     false = stdlib.boolean(False)
     assert stdlib.if_then_else(true)(c)(d).fully_eval() == c.fully_eval()
@@ -145,19 +145,19 @@ class Id(pgsn_term.Unary):
 
 def test_pgsn_term_nested2():
     id_f = Id.named()
-    x = pgsn_term.variable('x')
-    y = pgsn_term.variable('y')
-    z = pgsn_term.variable('z')
-    a = pgsn_term.constant('a')
-    b = pgsn_term.constant('b')
+    x = stdlib.variable('x')
+    y = stdlib.variable('y')
+    z = stdlib.variable('z')
+    a = stdlib.constant('a')
+    b = stdlib.constant('b')
     label = stdlib.string('ll')
-    t = pgsn_term.lambda_abs_vars(
+    t = stdlib.lambda_abs_vars(
         (x, y),
         stdlib.let(x, id_f(x), id_f(x)))
     assert t(a)(b).fully_eval() == a.fully_eval()
     t2 = lambda_abs_vars((x, y), t(x)(y))
     assert t2(a)(b).fully_eval() == a.fully_eval()
-    t3 = pgsn_term.lambda_abs_vars(
+    t3 = stdlib.lambda_abs_vars(
         (x, y),
         stdlib.let(
             x, stdlib.add_attribute(stdlib.empty_record)(label)(x),
@@ -171,10 +171,10 @@ def test_pgsn_term_nested2():
     assert t3(stdlib.empty_record)(r)(label).fully_eval() == stdlib.empty_record.fully_eval()
 
 
-x = pgsn_term.variable('x')
-y = pgsn_term.variable('y')
-z = pgsn_term.variable('z')
-f = pgsn_term.lambda_abs(x, x)
+x = stdlib.variable('x')
+y = stdlib.variable('y')
+z = stdlib.variable('z')
+f = stdlib.lambda_abs(x, x)
 label_a = stdlib.string('a')
 label_f = stdlib.string('f')
 r1 = stdlib.record({'a': stdlib.true})
@@ -190,7 +190,7 @@ def test_overwrite_record_fun():
         fully_eval().attributes().keys()) == {'f'}
 
 
-eta = pgsn_term.lambda_abs_vars((y, z), stdlib.overwrite_record(y)(z))
+eta = stdlib.lambda_abs_vars((y, z), stdlib.overwrite_record(y)(z))
 
 
 def test_overwrite_record_eta():
