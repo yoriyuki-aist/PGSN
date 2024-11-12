@@ -2,13 +2,12 @@ from __future__ import annotations
 import helpers
 from typing import Sequence
 from attrs import frozen, evolve, field
-from lambda_term import BuiltinFunction, Term, Unary, Variable, lambda_abs, lambda_abs_vars, Abs, App
+from lambda_term import BuiltinFunction, Term, Unary, Variable, lambda_abs, lambda_abs_vars, Abs, App, String, Integer, \
+    Boolean
 import lambda_term
 from record_term import Record
 from list_term import List
 import list_term
-from data_term import Integer, Boolean, String
-import data_term
 import record_term
 
 
@@ -124,7 +123,7 @@ class Plus(BuiltinFunction):
     def _apply_args(self, args: tuple[Term, ...]):
         i1 = args[0].value
         i2 = args[1].value
-        return data_term.Integer.nameless(value=i1+i2)
+        return lambda_term.Integer.nameless(value=i1 + i2)
 
 
 # multi_arg function
@@ -158,7 +157,7 @@ class MultiArgFunction(BuiltinFunction):
             main = lambda_term.lambda_abs(var, main)
         var_r = lambda_term.variable('r')
         for key in reversed(keywords):
-            s = data_term.string(key)
+            s = string(key)
             main = main(var_r(s))
         main = lambda_term.lambda_abs(var_r, main)
         for var in reversed(positional_vars):
@@ -329,8 +328,12 @@ fix = lambda_abs(_f,
                  )
 
 # Boolean related
-true = data_term.boolean(True)
-false = data_term.boolean(False)
+def boolean(b: bool) -> Boolean:
+    return Boolean.named(value=b)
+
+
+true = boolean(True)
+false = boolean(False)
 if_then_else = IfThenElse.named()
 guard = Guard.named()
 
@@ -380,7 +383,12 @@ list_all = lambda_abs_vars(
     )
 )
 
-integer_sum = fold(plus)(data_term.integer(0))
+
+def integer(i: int) -> Integer:
+    return Integer.named(value=i)
+
+
+integer_sum = fold(plus)(integer(0))
 
 # Record
 empty_record = record_term.record({})
@@ -400,23 +408,10 @@ def lambda_abs_keywords(keywords: tuple[str,...],
     t = lambda_abs_vars(variables, body)
     _args = lambda_term.variable('args')
     for k in keywords:
-        _k = data_term.string(k)
+        _k = string(k)
         t = t(_args(_k))
     return lambda_abs(_args, let(_args, overwrite_record(defaults)(_args), t))
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+def string(s: str) -> String:
+    return String.named(value=s)

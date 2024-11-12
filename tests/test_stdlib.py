@@ -1,6 +1,5 @@
 import list_term
 import lambda_term
-import data_term
 import record_term
 import stdlib
 from stdlib import lambda_abs, lambda_abs_vars, lambda_abs_keywords, plus, let
@@ -17,29 +16,29 @@ def test_list():
     assert t1.fully_eval() == c.fully_eval()
     assert t2.fully_eval().terms == (d.remove_name(), c.remove_name())
     assert t3.fully_eval() == t.fully_eval()
-    assert stdlib.index(t2)(data_term.integer(0)).fully_eval() == d.fully_eval()
-    assert stdlib.index(t2)(data_term.integer(1)).fully_eval() == c.fully_eval()
+    assert stdlib.index(t2)(stdlib.integer(0)).fully_eval() == d.fully_eval()
+    assert stdlib.index(t2)(stdlib.integer(1)).fully_eval() == c.fully_eval()
     assert t3.fully_eval() == t.fully_eval()
 
 
 def test_integer():
-    i1 = data_term.integer(1)
-    i2 = data_term.integer(1)
+    i1 = stdlib.integer(1)
+    i2 = stdlib.integer(1)
     i = stdlib.plus(i1)(i2)
     assert i.fully_eval().value == 2
 
 
 def test_fold():
-    i1 = data_term.integer(1)
-    i2 = data_term.integer(1)
+    i1 = stdlib.integer(1)
+    i2 = stdlib.integer(1)
     ll = stdlib.cons(i1)(stdlib.cons(i2)(list_term.empty))
     i = stdlib.integer_sum(ll)
     assert i.fully_eval().value == 2
 
 
 def test_map():
-    i1 = data_term.integer(1)
-    i2 = data_term.integer(2)
+    i1 = stdlib.integer(1)
+    i2 = stdlib.integer(2)
     ll = stdlib.cons(i1)(stdlib.cons(i2)(list_term.empty))
     plus_one = stdlib.plus(i1)
     ll_1 = stdlib.map_term(plus_one)(ll)
@@ -53,14 +52,14 @@ def test_multi_arg_function():
     y = lambda_term.variable('y')
     a = lambda_term.variable('a')
     b = lambda_term.variable('b')
-    default = data_term.integer(1)
+    default = stdlib.integer(1)
     defaults = record_term.record( {'b': default},)
     f = lambda_abs_vars((x, y), lambda_abs_keywords(('a', 'b'), defaults, stdlib.plus(x)(b)))
     f1 = lambda_abs(x, lambda_abs_keywords(('a',), stdlib.empty_record, stdlib.plus(x)(a)))
-    zero = data_term.integer(0)
-    one = data_term.integer(1)
-    two = data_term.integer(2)
-    three = data_term.integer(2)
+    zero = stdlib.integer(0)
+    one = stdlib.integer(1)
+    two = stdlib.integer(2)
+    three = stdlib.integer(2)
     r = record_term.record({'a': zero})
     assert f1(one)(r).fully_eval().value == 1
     assert f(one)(two)(r).fully_eval().value == 2
@@ -81,8 +80,8 @@ def test_let():
 def test_let2():
     x = lambda_term.variable('x')
     y = lambda_term.variable('y')
-    one = data_term.integer(1)
-    two = data_term.integer(2)
+    one = stdlib.integer(1)
+    two = stdlib.integer(2)
     t = lambda_abs_vars((x, y),
                         (lambda_abs(x, plus(x)(y))(plus(x)(x)))
                         )
@@ -98,8 +97,8 @@ def test_let2():
 def test_bool():
     c = lambda_term.constant('c')
     d = lambda_term.constant('d')
-    true = data_term.boolean(True)
-    false = data_term.boolean(False)
+    true = stdlib.boolean(True)
+    false = stdlib.boolean(False)
     assert stdlib.if_then_else(true)(c)(d).fully_eval() == c.fully_eval()
     assert stdlib.if_then_else(false)(c)(d).fully_eval() == d.fully_eval()
     assert stdlib.guard(true)(c).fully_eval() == c.fully_eval()
@@ -107,19 +106,19 @@ def test_bool():
 
 
 def test_equal():
-    s1 = data_term.string('s1')
-    s2 = data_term.string('s2')
+    s1 = stdlib.string('s1')
+    s2 = stdlib.string('s2')
     assert stdlib.equal(s1)(s1).fully_eval().value
     assert not stdlib.equal(s1)(s2).fully_eval().value
 
 
 def test_record():
-    zero = data_term.integer(0)
-    one = data_term.integer(1)
-    two = data_term.integer(2)
-    a = data_term.string('a')
-    b = data_term.string('b')
-    c = data_term.string('c')
+    zero = stdlib.integer(0)
+    one = stdlib.integer(1)
+    two = stdlib.integer(2)
+    a = stdlib.string('a')
+    b = stdlib.string('b')
+    c = stdlib.string('c')
     r = stdlib.add_attribute(stdlib.empty_record)(a)(zero)
     r = stdlib.add_attribute(r)(b)(one)
     assert isinstance(r.fully_eval(), record_term.Record)
@@ -153,7 +152,7 @@ def test_lambda_term_nested2():
     z = lambda_term.variable('z')
     a = lambda_term.constant('a')
     b = lambda_term.constant('b')
-    label = data_term.string('ll')
+    label = stdlib.string('ll')
     t = lambda_term.lambda_abs_vars(
         (x, y),
         stdlib.let(x, id_f(x), id_f(x)))
@@ -168,7 +167,7 @@ def test_lambda_term_nested2():
         )
     )
     r = record_term.record({'a': a})
-    label_a = data_term.string('a')
+    label_a = stdlib.string('a')
     assert t3(stdlib.empty_record)(r)(label_a).fully_eval() == a.fully_eval()
     assert stdlib.has_label(t3(stdlib.empty_record)(r))(label).fully_eval()
     assert t3(stdlib.empty_record)(r)(label).fully_eval() == stdlib.empty_record.fully_eval()
@@ -178,8 +177,8 @@ x = lambda_term.variable('x')
 y = lambda_term.variable('y')
 z = lambda_term.variable('z')
 f = lambda_term.lambda_abs(x, x)
-label_a = data_term.string('a')
-label_f = data_term.string('f')
+label_a = stdlib.string('a')
+label_f = stdlib.string('f')
 r1 = record_term.record({'a': stdlib.true})
 r2 = record_term.record({'f': f})
 r3 = stdlib.add_attribute(stdlib.empty_record)(label_a)(stdlib.true)

@@ -1,6 +1,5 @@
 import list_term
 import lambda_term
-import data_term
 import record_term
 import object_term
 from object_term import method, inherit, instantiate, is_subclass, is_instance
@@ -9,12 +8,12 @@ from stdlib import let
 from lambda_term import lambda_abs, lambda_abs_vars
 
 
-a = data_term.string('a')
-b = data_term.string('b')
-c = data_term.string('c')
-name = data_term.string('Class')
-name1 = data_term.string('Child')
-defaults = record_term.record({'a': data_term.boolean(True)})
+a = stdlib.string('a')
+b = stdlib.string('b')
+c = stdlib.string('c')
+name = stdlib.string('Class')
+name1 = stdlib.string('Child')
+defaults = record_term.record({'a': stdlib.boolean(True)})
 self = lambda_term.variable('self')
 get_value_term = lambda_term.lambda_abs(self,
                                         stdlib.if_then_else(self(a))(self(b))(self(c))
@@ -22,8 +21,8 @@ get_value_term = lambda_term.lambda_abs(self,
 # attrs1 = inherit(defaults)(record_term.record({'value': get_value_term}))
 attrs1 = record_term.record({'a': stdlib.true, 'value': get_value_term})
 cls = object_term.define_class(name)(object_term.base_class)(attrs1)
-label_instance = data_term.string('_instance')
-test = data_term.string('test')
+label_instance = stdlib.string('_instance')
+test = stdlib.string('test')
 
 
 def test_test():
@@ -35,12 +34,12 @@ def test_test():
 def test_inherit():
     x = lambda_term.variable('x')
     id = lambda_term.lambda_abs(x, x)
-    zero = data_term.integer(0)
-    one = data_term.integer(1)
-    two = data_term.integer(2)
-    a = data_term.string('a')
-    b = data_term.string('b')
-    c = data_term.string('c')
+    zero = stdlib.integer(0)
+    one = stdlib.integer(1)
+    two = stdlib.integer(2)
+    a = stdlib.string('a')
+    b = stdlib.string('b')
+    c = stdlib.string('c')
     r = stdlib.add_attribute(stdlib.empty_record)(a)(zero)
     r = stdlib.add_attribute(r)(b)(one)
     r1 = record_term.record({'c': two})
@@ -80,8 +79,8 @@ def test_subclass():
 
 
 attrs2 = record_term.record({'b': b, 'c': c})
-attrs3 = record_term.record({'a': data_term.boolean(False), 'b': b, 'c': c})
-label_value = data_term.string('value')
+attrs3 = record_term.record({'a': stdlib.boolean(False), 'b': b, 'c': c})
+label_value = stdlib.string('value')
 obj1 = object_term.instantiate(cls)(stdlib.empty_record)
 obj2 = object_term.instantiate(cls)(attrs2)
 obj3 = object_term.instantiate(cls)(attrs3)

@@ -1,10 +1,8 @@
 import meta_info
 import lambda_term
-from lambda_term import lambda_abs_vars
+from lambda_term import lambda_abs_vars, String, Integer
 from record_term import Record
 import record_term
-from data_term import Integer, String
-import data_term
 import stdlib
 from stdlib import let
 
@@ -14,8 +12,8 @@ def test_record():
     y = lambda_term.constant('y')
     z = lambda_term.constant('z')
     r = record_term.record({'x': x, 'y': y, 'z': z})
-    k1 = data_term.string('x')
-    k2 = data_term.string('w')
+    k1 = stdlib.string('x')
+    k2 = stdlib.string('w')
     assert r(k1).eval() == x.eval()
     assert r(k2).eval_or_none() is None
 
@@ -26,8 +24,8 @@ z = lambda_term.variable('z')
 a = lambda_term.variable('a')
 b = lambda_term.constant('b')
 c = lambda_term.constant('c')
-label_1 = data_term.string('l1')
-label_2 = data_term.string('l2')
+label_1 = stdlib.string('l1')
+label_2 = stdlib.string('l2')
 r1 = record_term.record({'l1': a})
 r2 = stdlib.add_attribute(stdlib.empty_record)(label_2)(r1)
 r3 = stdlib.overwrite_record(r1)(r2)

@@ -1,8 +1,7 @@
 from __future__ import annotations
 import helpers
 from attrs import field, frozen, evolve
-from lambda_term import Term, Unary
-from data_term import Integer
+from lambda_term import Term, Unary, Integer
 
 
 # List

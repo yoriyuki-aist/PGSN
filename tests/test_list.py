@@ -1,9 +1,8 @@
 
 import meta_info
 import lambda_term
+import stdlib
 from list_term import List
-from data_term import Integer, String
-import data_term
 
 
 def test_list():
@@ -12,5 +11,5 @@ def test_list():
     z = lambda_term.constant('z')
     ll = List.named(terms=(x, y, z))
     assert ll.terms == (x, y, z)
-    i = data_term.integer(1)
+    i = stdlib.integer(1)
     assert ll(i).eval().name == 'y'

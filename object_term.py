@@ -1,9 +1,7 @@
 from attrs import field, frozen
 import helpers
-from lambda_term import Term, Unary, BuiltinFunction
+from lambda_term import Term, Unary, BuiltinFunction, String
 import lambda_term
-from data_term import String
-import data_term
 from list_term import List
 from record_term import Record
 import record_term
@@ -27,12 +25,12 @@ _methods = lambda_term.variable("_methods")
 _label = lambda_term.variable("_label")
 _name = lambda_term.variable("_name")
 
-_label_attrs = data_term.string("_attributes")
-_label_methods = data_term.string("_methods")
-_label_parent = data_term.string('_parent')
-_label_object = data_term.string('_object')
-_label_class = data_term.string('_class')
-_label_anything = data_term.string('_anything')
+_label_attrs = stdlib.string("_attributes")
+_label_methods = stdlib.string("_methods")
+_label_parent = stdlib.string('_parent')
+_label_object = stdlib.string('_object')
+_label_class = stdlib.string('_class')
+_label_anything = stdlib.string('_anything')
 
 
 _define_obj = lambda_abs(_attrs, stdlib.add_attribute(_attrs)(_label_object)(stdlib.true))
@@ -51,7 +49,7 @@ inherit = lambda_abs_vars((_parent, _attrs),
 
 # Class-based OO
 # Class
-_label_class_name = data_term.string('_class_name')
+_label_class_name = stdlib.string('_class_name')
 _class = lambda_term.variable('_class')
 
 define_class = lambda_abs_vars(
@@ -64,10 +62,10 @@ define_class = lambda_abs_vars(
 
 is_class = lambda_abs(_class, has_label(_class)(_label_class_name))
 
-base_class = define_class(data_term.string('BaseClass'))(the_one)(stdlib.empty_record)
+base_class = define_class(stdlib.string('BaseClass'))(the_one)(stdlib.empty_record)
 
 # Object
-_label_instance = data_term.string('_instance')
+_label_instance = stdlib.string('_instance')
 instantiate = lambda_abs_vars(
     (_class, _attrs),
     (let(
