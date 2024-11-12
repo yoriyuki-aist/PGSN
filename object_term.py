@@ -7,15 +7,15 @@ ObjectTerm = Record
 
 # Special constants
 # all labels staring the underscore are reserved for OO systems
-_obj = lambda_term.variable("obj")
-_parent = lambda_term.variable("parent")
-_attrs = lambda_term.variable("attrs")
-_x = lambda_term.variable('x')
-_y = lambda_term.variable('y')
-_self = lambda_term.variable('_self')
-_methods = lambda_term.variable("_methods")
-_label = lambda_term.variable("_label")
-_name = lambda_term.variable("_name")
+_obj = pgsn_term.variable("obj")
+_parent = pgsn_term.variable("parent")
+_attrs = pgsn_term.variable("attrs")
+_x = pgsn_term.variable('x')
+_y = pgsn_term.variable('y')
+_self = pgsn_term.variable('_self')
+_methods = pgsn_term.variable("_methods")
+_label = pgsn_term.variable("_label")
+_name = pgsn_term.variable("_name")
 
 _label_attrs = stdlib.string("_attributes")
 _label_methods = stdlib.string("_methods")
@@ -42,7 +42,7 @@ inherit = lambda_abs_vars((_parent, _attrs),
 # Class-based OO
 # Class
 _label_class_name = stdlib.string('_class_name')
-_class = lambda_term.variable('_class')
+_class = pgsn_term.variable('_class')
 
 define_class = lambda_abs_vars(
     (_name, _parent, _attrs),
@@ -66,9 +66,9 @@ instantiate = lambda_abs_vars(
     )))
 is_obj = lambda_abs(_obj, has_label(_obj)(_label_instance))
 
-_class1 = lambda_term.variable('_class1')
-_class2 = lambda_term.variable('_class2')
-_is_subclass = lambda_term.variable('_is_subclass')
+_class1 = pgsn_term.variable('_class1')
+_class2 = pgsn_term.variable('_class2')
+_is_subclass = pgsn_term.variable('_is_subclass')
 is_subclass = stdlib.fix\
     (lambda_abs_vars((_is_subclass, _class1, _class2),
                      if_then_else
@@ -80,7 +80,7 @@ is_subclass = stdlib.fix\
                      (false)
                      ))
 
-_is_instance = lambda_term.variable('_is_instance')
+_is_instance = pgsn_term.variable('_is_instance')
 is_instance = lambda_abs_vars(
                              (_obj, _class),
                              is_subclass(_obj(_label_instance))(_class)

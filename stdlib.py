@@ -2,9 +2,9 @@ from __future__ import annotations
 import helpers
 from typing import Sequence
 from attrs import frozen, evolve, field
-from lambda_term import BuiltinFunction, Term, Unary, Variable, lambda_abs, lambda_abs_vars, Abs, App, String, Integer, \
+from pgsn_term import BuiltinFunction, Term, Unary, Variable, lambda_abs, lambda_abs_vars, Abs, App, String, Integer, \
     Boolean, List, Record
-import lambda_term
+import pgsn_term
 
 
 def check_type_list(arg: Term, types: list):
@@ -119,7 +119,7 @@ class Plus(BuiltinFunction):
     def _apply_args(self, args: tuple[Term, ...]):
         i1 = args[0].value
         i2 = args[1].value
-        return lambda_term.Integer.nameless(value=i1 + i2)
+        return pgsn_term.Integer.nameless(value=i1 + i2)
 
 
 # multi_arg function
@@ -149,15 +149,15 @@ class MultiArgFunction(BuiltinFunction):
         keywords = sorted(keyword_args.keys())
         main = body
         for key in keywords:
-            var = lambda_term.variable(key)
-            main = lambda_term.lambda_abs(var, main)
-        var_r = lambda_term.variable('r')
+            var = pgsn_term.variable(key)
+            main = pgsn_term.lambda_abs(var, main)
+        var_r = pgsn_term.variable('r')
         for key in reversed(keywords):
             s = string(key)
             main = main(var_r(s))
-        main = lambda_term.lambda_abs(var_r, main)
+        main = pgsn_term.lambda_abs(var_r, main)
         for var in reversed(positional_vars):
-            main = lambda_term.lambda_abs(var, main)
+            main = pgsn_term.lambda_abs(var, main)
         return cls(is_named=is_named,
                    arity=len(positional_vars) + 1,
                    keyword_args=keyword_args.copy(),
@@ -274,7 +274,7 @@ class ListLabels(Unary):
 
     def _apply_arg(self, term: Term):
         labels = map(lambda l: String(is_named=self.is_named, value=l), term.attributes())
-        return lambda_term.List.build(is_named=self.is_named, terms=tuple(labels))
+        return pgsn_term.List.build(is_named=self.is_named, terms=tuple(labels))
 
 
 class OverwriteRecord(BuiltinFunction):
@@ -295,19 +295,19 @@ class OverwriteRecord(BuiltinFunction):
 
 # Interface by lambda terms
 # identifiers starting _ is reserved for internal uses.
-_x = lambda_term.variable('x')
-_y = lambda_term.variable('y')
-_z = lambda_term.variable('z')
-_w = lambda_term.variable('w')
-_f = lambda_term.variable('f')
-_label = lambda_term.variable('label')
+_x = pgsn_term.variable('x')
+_y = pgsn_term.variable('y')
+_z = pgsn_term.variable('z')
+_w = pgsn_term.variable('w')
+_f = pgsn_term.variable('f')
+_label = pgsn_term.variable('label')
 
-undefined = lambda_term.constant('undefined')
+undefined = pgsn_term.constant('undefined')
 
 
 # let var = t1 in t2
 def let(var: Variable, t1: Term, t2: Term):
-    return (lambda_term.lambda_abs(var, t2))(t1)
+    return (pgsn_term.lambda_abs(var, t2))(t1)
 
 
 # let v1 = t1, v2 = t2, ... in t
@@ -358,10 +358,10 @@ index = Index.named()
 #fold = Fold.named()
 map_term = Map.named()
 
-_elem = lambda_term.variable('elem')
-_list = lambda_term.variable('list')
-_acc = lambda_term.variable('acc')
-_foldr = lambda_term.variable('_foldr')
+_elem = pgsn_term.variable('elem')
+_list = pgsn_term.variable('list')
+_acc = pgsn_term.variable('acc')
+_foldr = pgsn_term.variable('_foldr')
 empty: List = List.named(terms=tuple())
 _F = lambda_abs_vars((_foldr, _f, _acc, _list),
                      if_then_else(equal(_list)(empty))
@@ -405,9 +405,9 @@ def lambda_abs_keywords(keywords: tuple[str,...],
                         defaults: Record,
                         body: Term) -> Term:
     keywords = tuple(sorted(keywords))
-    variables = tuple((lambda_term.variable(k) for k in keywords))
+    variables = tuple((pgsn_term.variable(k) for k in keywords))
     t = lambda_abs_vars(variables, body)
-    _args = lambda_term.variable('args')
+    _args = pgsn_term.variable('args')
     for k in keywords:
         _k = string(k)
         t = t(_args(_k))
