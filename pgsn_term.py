@@ -27,6 +27,27 @@ class LambdaInterpreterError(Exception):
     pass
 
 
+Castable: TypeAlias = "Term | int | str | bool | list | dict"
+
+
+def cast(x: Castable, is_named: bool) -> Term:
+    match x:
+        case Term():
+            return x
+        case int():
+            return Integer.build(is_named=is_named, value=x)
+        case str():
+            return String.build(is_named=is_named   , value=x)
+        case bool():
+            return Boolean.build(is_named=is_named, value=x)
+        case list():
+            y = [cast(z, is_named=is_named) for z in x]
+            return List.build(is_named=is_named, terms=y)
+        case dict():
+            y = {k: cast(z, is_named=is_named) for k, z in x.items()}
+            return Record.build(is_named=is_named, attributes=y)
+
+
 @frozen(kw_only=True)
 class Term(ABC):
     # meta_info is always not empty
@@ -132,9 +153,16 @@ class Term(ABC):
         assert self.is_named
         return self.remove_name_with_context(self.my_naming_context())
 
-    def __call__(self, arg: Term) -> Term:
-        assert self.is_named == arg.is_named
-        return App(self, arg, is_named=self.is_named)
+    def __call__(self, *args: Castable, **kwargs: Castable) -> Term:
+        arg_terms = list(map(lambda x: cast(x, is_named=self.is_named), args))
+        kwarg = Record.build(is_named=self.is_named,
+                             attributes={k: cast(v, is_named=self.is_named) for k, v in kwargs.items()})
+        t = self
+        for arg in arg_terms:
+            t = App.build(t1=t, t2=arg, is_named=self.is_named)
+        if kwargs == {}:
+            return t
+        return App.build(t1=t, t2=kwarg, is_named=self.is_named)
 
 
 @frozen

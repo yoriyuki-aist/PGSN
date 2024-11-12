@@ -65,6 +65,9 @@ def test_multi_arg_function():
     assert f(one)(two)(r1).fully_eval().value == 1
     r2 = stdlib.record({})
     assert isinstance(f1(one)(two)(r2).fully_eval(), pgsn_term.App)
+    assert f1(one, a=zero).fully_eval().value == 1
+    assert f(one, two, a=zero).fully_eval().value ==2
+    assert f(one, two, a=zero, b=zero).fully_eval().value == 1
 
 
 def test_let():
