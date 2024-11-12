@@ -1,4 +1,3 @@
-import list_term
 import lambda_term
 import record_term
 import stdlib
@@ -8,7 +7,7 @@ from stdlib import lambda_abs, lambda_abs_vars, lambda_abs_keywords, plus, let
 def test_list():
     c = lambda_term.constant('c')
     d = lambda_term.constant('d')
-    t = stdlib.cons(c)(list_term.empty)
+    t = stdlib.cons(c)(stdlib.empty)
     t1 = stdlib.head(t)
     t2 = stdlib.cons(d)(t)
     t3 = stdlib.tail(t2)
@@ -31,7 +30,7 @@ def test_integer():
 def test_fold():
     i1 = stdlib.integer(1)
     i2 = stdlib.integer(1)
-    ll = stdlib.cons(i1)(stdlib.cons(i2)(list_term.empty))
+    ll = stdlib.cons(i1)(stdlib.cons(i2)(stdlib.empty))
     i = stdlib.integer_sum(ll)
     assert i.fully_eval().value == 2
 
@@ -39,7 +38,7 @@ def test_fold():
 def test_map():
     i1 = stdlib.integer(1)
     i2 = stdlib.integer(2)
-    ll = stdlib.cons(i1)(stdlib.cons(i2)(list_term.empty))
+    ll = stdlib.cons(i1)(stdlib.cons(i2)(stdlib.empty))
     plus_one = stdlib.plus(i1)
     ll_1 = stdlib.map_term(plus_one)(ll)
     assert len(ll_1.fully_eval().terms) == 2
@@ -127,7 +126,7 @@ def test_record():
     assert not stdlib.has_label(r)(c).fully_eval().value
     assert stdlib.has_label(stdlib.remove_attribute(r)(b))(a).fully_eval().value
     assert not stdlib.has_label(stdlib.remove_attribute(r)(b))(b).fully_eval().value
-    assert stdlib.list_labels(r).fully_eval() == list_term.List.named(terms=(a, b)).fully_eval()
+    assert stdlib.list_labels(r).fully_eval() == lambda_term.List.named(terms=(a, b)).fully_eval()
     r1 = record_term.record({'c': two})
     assert stdlib.overwrite_record(r)(r1)(a).fully_eval().value == 0
     assert stdlib.overwrite_record(r)(r1)(c).fully_eval().value == 2

@@ -1,8 +1,7 @@
 from attrs import field, frozen
 import helpers
-from lambda_term import Term, Unary, BuiltinFunction, String
+from lambda_term import Term, Unary, BuiltinFunction, String, List
 import lambda_term
-from list_term import List
 from record_term import Record
 import record_term
 import stdlib

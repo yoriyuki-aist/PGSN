@@ -3,11 +3,9 @@ import helpers
 from typing import Sequence
 from attrs import frozen, evolve, field
 from lambda_term import BuiltinFunction, Term, Unary, Variable, lambda_abs, lambda_abs_vars, Abs, App, String, Integer, \
-    Boolean
+    Boolean, List
 import lambda_term
 from record_term import Record
-from list_term import List
-import list_term
 import record_term
 
 
@@ -278,7 +276,7 @@ class ListLabels(Unary):
 
     def _apply_arg(self, term: Term):
         labels = map(lambda l: String(is_named=self.is_named, value=l), term.attributes())
-        return list_term.List.build(is_named=self.is_named, terms=tuple(labels))
+        return lambda_term.List.build(is_named=self.is_named, terms=tuple(labels))
 
 
 class OverwriteRecord(BuiltinFunction):
@@ -366,8 +364,9 @@ _elem = lambda_term.variable('elem')
 _list = lambda_term.variable('list')
 _acc = lambda_term.variable('acc')
 _foldr = lambda_term.variable('_foldr')
+empty: List = List.named(terms=tuple())
 _F = lambda_abs_vars((_foldr, _f, _acc, _list),
-                     if_then_else(equal(_list)(list_term.empty))
+                     if_then_else(equal(_list)(empty))
                      (_acc)
                      (_f(head(_list))(_foldr(_f)(_acc)(tail(_list))) )
                      )
@@ -415,3 +414,7 @@ def lambda_abs_keywords(keywords: tuple[str,...],
 
 def string(s: str) -> String:
     return String.named(value=s)
+
+
+def list_term(terms: tuple[Term,...]) -> List:
+    return List.named(terms=terms)

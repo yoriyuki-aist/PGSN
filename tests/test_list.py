@@ -2,7 +2,7 @@
 import meta_info
 import lambda_term
 import stdlib
-from list_term import List
+from lambda_term import List
 
 
 def test_list():

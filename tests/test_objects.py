@@ -1,4 +1,3 @@
-import list_term
 import lambda_term
 import record_term
 import object_term
