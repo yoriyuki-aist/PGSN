@@ -9,6 +9,8 @@ from typing import TypeVar
 from meta_info import MetaInfo
 import meta_info as meta
 import helpers
+import pgsn_term
+import stdlib
 
 
 @frozen
@@ -98,3 +100,54 @@ class Goal(GSN):
 
 
 undeveloped: Support = Support(description='Undeveloped')
+
+
+def _dict_to_gsn(v: dict):
+    if 'gsn_type' not in v:
+        raise ValueError('PGSN term does not normalizes a GSN')
+    match v['gsn_type']:
+        case 'Node':
+            raise ValueError('Node with unspecified kind')
+        case 'Support':
+            if v['description'] == 'Undeveloped':
+                return undeveloped
+            else:
+                raise ValueError('Support without specific type')
+        case 'Evidence':
+            return Evidence(description=v['description'])
+        case 'Strategy':
+            if len(v['subgoals']) == 0:
+                raise ValueError('Strategy must have more than one sub-goals')
+            sub_goals = [_dict_to_gsn(g) for g in v['subgoals']]
+            if not all(isinstance(g, Goal) for g in sub_goals):
+                raise ValueError('Sub-goals must be goals')
+            return Strategy(description=v['description'],
+                            sub_goals=tuple(sub_goals))
+        case 'Goal':
+            assumptions = [_dict_to_gsn(a) for a in v['assumptions']]
+            if not all(isinstance(a, Assumption) for a in assumptions):
+                raise ValueError('Assumptions must be assumptions')
+            contexts = [_dict_to_gsn(c) for c in v['contexts']]
+            if not all(isinstance(c, Assumption) for c in contexts):
+                raise ValueError('Contexts must be Contexts')
+            support = _dict_to_gsn(v['support'])
+            if not (isinstance(support, Strategy) or
+                    isinstance(support, Evidence) or
+                    support == undeveloped):
+                raise ValueError('Support must be either a strategy, an evidence or undeveloped')
+            return Goal(description=v['description'],
+                        assumptions=assumptions,
+                        contexts=contexts,
+                        support=support)
+        case 'Assumption':
+            return Assumption(description=v['description'])
+        case 'Context':
+            return Context(description=v['description'])
+
+
+def pgsn_to_gsn(t: pgsn_term.Term, steps=1000):
+    v = stdlib.value_of(t.fully_eval(step=steps))
+    if not isinstance(v, dict):
+        raise ValueError('Term does not have a GSN')
+    return _dict_to_gsn(v)
+
