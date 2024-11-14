@@ -48,6 +48,7 @@ def cast(x: Castable, is_named: bool) -> Term:
             return Record.build(is_named=is_named, attributes=y)
         case None:
             return Nothing.build(is_named=is_named, value=None)
+        case _: assert False
 
 
 @frozen(kw_only=True)

@@ -1,6 +1,6 @@
 from __future__ import annotations
 import helpers
-from typing import Sequence
+from typing import Sequence, Any
 from attrs import frozen, evolve, field
 from pgsn_term import BuiltinFunction, Term, Unary, Variable, Abs, App, String, Integer, \
     Boolean, List, Record, Constant
@@ -441,3 +441,21 @@ def string(s: str) -> String:
 
 def list_term(terms: tuple[Term,...]) -> List:
     return List.named(terms=terms)
+
+
+# Extract python values from pgsn term
+def value_of(term: Term, steps=1000) -> Any:
+    t = term.fully_eval(steps)
+    match t:
+        case pgsn_term.Data():
+            return t.value
+        case List():
+            terms = t.terms
+            return [value_of(t1) for t1 in terms]
+        case Record():
+            attr = t.attributes()
+            return {k: value_of(t1) for k, t1 in attr.items()}
+        case _:
+            raise ValueError('PGSN term does not normalizes a Python value')
+
+
