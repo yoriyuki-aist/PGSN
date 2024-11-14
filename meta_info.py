@@ -1,6 +1,5 @@
-from attrs import define
 from debug_info import DebugInfo
-from attrs import field, frozen, evolve, define
+from attrs import field, frozen
 
 
 @frozen
