@@ -213,9 +213,15 @@ def test_add_attribute_record_fun():
 
 
 id_f = Id.named()
+
 def test_value_of():
     assert stdlib.value_of(stdlib.integer(1)) == 1
     assert stdlib.value_of(stdlib.true)
     assert stdlib.value_of(stdlib.string('hoge')) == 'hoge'
     assert stdlib.value_of(id_f(['gaga', 'piyo'])) == ['gaga', 'piyo']
     assert stdlib.value_of(id_f({'gaga':1, 'piyo':2})) == {'gaga':1, 'piyo':2}
+
+
+def test_format():
+    f_string = stdlib.string('{x}, {y}, {z}')
+    assert stdlib.value_of(stdlib.printer(f_string, {'x':1, 'y': 'hoge', 'z': [1, 2]})) == '1, hoge, [1, 2]'

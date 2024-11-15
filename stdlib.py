@@ -293,6 +293,49 @@ class OverwriteRecord(BuiltinFunction):
         return Record.build(is_named=self.is_named, attributes=r)
 
 
+Printable = String | Integer
+
+
+def _uncast(t: Term):
+    match t:
+        case pgsn_term.Data():
+            return t.value
+        case List():
+            terms = t.terms
+            return [value_of(t1) for t1 in terms]
+        case Record():
+            attr = t.attributes()
+            return {k: value_of(t1) for k, t1 in attr.items()}
+        case _:
+            raise ValueError('PGSN term does not normalizes a Python value')
+
+
+class Formatter(BuiltinFunction):
+    arity = 2
+    name = 'Format string'
+
+    def _applicable_args(self, terms: tuple[Term,...]):
+        if not len(terms) == 2:
+            return False
+        if not isinstance(terms[0], String):
+            return False
+        if not isinstance(terms[1], Record):
+            return False
+        try:
+            python_vals = _uncast(terms[1])
+            _ = terms[0].value.format(**python_vals)
+            return True
+        except (KeyError, TypeError, ValueError):
+            return False
+
+    def _apply_args(self, terms: tuple[Term,...]):
+        python_vals = _uncast(terms[1])
+        return String.build(is_named=self.is_named, value=terms[0].value.format(**python_vals))
+
+
+printer = Formatter.named()
+
+
 # Interface by lambda terms
 # identifiers starting _ is reserved for internal uses.
 def variable(name: str) -> Variable:
@@ -408,6 +451,7 @@ def integer(i: int) -> Integer:
 
 integer_sum = fold(plus)(integer(0))
 
+
 # Record
 def record(d: dict[str, Term]):
     return Record.named(attributes=d)
@@ -446,16 +490,4 @@ def list_term(terms: tuple[Term,...]) -> List:
 # Extract python values from pgsn term
 def value_of(term: Term, steps=1000) -> Any:
     t = term.fully_eval(steps)
-    match t:
-        case pgsn_term.Data():
-            return t.value
-        case List():
-            terms = t.terms
-            return [value_of(t1) for t1 in terms]
-        case Record():
-            attr = t.attributes()
-            return {k: value_of(t1) for k, t1 in attr.items()}
-        case _:
-            raise ValueError('PGSN term does not normalizes a Python value')
-
-
+    return _uncast(t)
