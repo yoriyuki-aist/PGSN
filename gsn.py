@@ -59,7 +59,8 @@ class Strategy(Support):
 
     @sub_goals.validator
     def _check_sub_goals(self, _, v):
-        raise ValueError('Strategy must have more than one sub-goals')
+        if len(v) == 0:
+            raise ValueError('Strategy must have more than one sub-goals')
 
     def gsn_parts(self, parent_id, my_id):
         children_ids = [str(uuid.uuid4()) for _ in range(len(self.sub_goals))]
@@ -90,10 +91,10 @@ class Goal(GSN):
              'children': [support_id],
              'kind': 'Goal',
              'detail': self.description}
-        ]
+        ] + self.support.gsn_parts(parent_id=my_id, my_id=support_id)
 
 
-undeveloped: Support = Support(description='Undeveloped')
+undeveloped: Undeveloped = Undeveloped(description='Undeveloped')
 
 
 def _dict_to_gsn(v: dict):
@@ -106,7 +107,7 @@ def _dict_to_gsn(v: dict):
             if v['description'] == 'Undeveloped':
                 return undeveloped
             else:
-                raise ValueError('Support without specific type')
+                raise ValueError(f'Support {v} without specific type')
         case 'Evidence':
             return Evidence(description=v['description'])
         case 'Strategy':
@@ -114,7 +115,7 @@ def _dict_to_gsn(v: dict):
                 raise ValueError('Strategy must have more than one sub-goals')
             sub_goals = [_dict_to_gsn(g) for g in v['subgoals']]
             if not all(isinstance(g, Goal) for g in sub_goals):
-                raise ValueError('Sub-goals must be goals')
+                raise ValueError(f'Sub-goals {sub_goals} must be goals')
             return Strategy(description=v['description'],
                             sub_goals=tuple(sub_goals))
         case 'Goal':
@@ -128,7 +129,7 @@ def _dict_to_gsn(v: dict):
             if not (isinstance(support, Strategy) or
                     isinstance(support, Evidence) or
                     support == undeveloped):
-                raise ValueError('Support must be either a strategy, an evidence or undeveloped')
+                raise ValueError(f'support {support} must be either a strategy, an evidence or undeveloped')
             return Goal(description=v['description'],
                         assumptions=assumptions,
                         contexts=contexts,
@@ -140,8 +141,12 @@ def _dict_to_gsn(v: dict):
 
 
 def pgsn_to_gsn(t: pgsn_term.Term, steps=1000):
-    v = stdlib.value_of(t.fully_eval(step=steps))
+    v = stdlib.value_of(t, steps=steps)
     if not isinstance(v, dict):
         raise ValueError('Term does not have a GSN')
     return _dict_to_gsn(v)
+
+
+def python_val(gsn):
+    return gsn.gsn_parts(str(uuid.uuid4()), str(uuid.uuid4()))
 

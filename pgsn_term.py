@@ -46,8 +46,6 @@ def cast(x: Castable, is_named: bool) -> Term:
         case dict():
             y = {k: cast(z, is_named=is_named) for k, z in x.items()}
             return Record.build(is_named=is_named, attributes=y)
-        case None:
-            return Nothing.build(is_named=is_named, value=None)
         case _: assert False
 
 
@@ -552,10 +550,6 @@ class Integer(Data[int]):
 
 
 class Boolean(Data[bool]):
-    pass
-
-
-class Nothing(Data[None]):
     pass
 
 

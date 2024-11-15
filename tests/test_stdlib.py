@@ -224,4 +224,4 @@ def test_value_of():
 
 def test_format():
     f_string = stdlib.string('{x}, {y}, {z}')
-    assert stdlib.value_of(stdlib.printer(f_string, {'x':1, 'y': 'hoge', 'z': [1, 2]})) == '1, hoge, [1, 2]'
+    assert stdlib.value_of(stdlib.format_string(f_string, {'x':1, 'y': 'hoge', 'z': [1, 2]})) == '1, hoge, [1, 2]'

@@ -307,7 +307,7 @@ def _uncast(t: Term):
             attr = t.attributes()
             return {k: value_of(t1) for k, t1 in attr.items()}
         case _:
-            raise ValueError('PGSN term does not normalizes a Python value')
+            raise ValueError(f'PGSN term {type(t)} does not normalizes a Python value')
 
 
 class Formatter(BuiltinFunction):
@@ -333,7 +333,7 @@ class Formatter(BuiltinFunction):
         return String.build(is_named=self.is_named, value=terms[0].value.format(**python_vals))
 
 
-printer = Formatter.named()
+format_string = Formatter.named()
 
 
 # Interface by lambda terms
@@ -467,8 +467,8 @@ overwrite_record = OverwriteRecord.named()
 
 # keyword_args_function
 def lambda_abs_keywords(arguments: dict[str,Variable],
-                        defaults: Record,
-                        body: Term) -> Term:
+                        body: Term,
+                        defaults: Record = empty_record) -> Term:
     sorted_arguments = sorted(arguments.items(), key=lambda x: x[0])
     variables = tuple((v for _, v in sorted_arguments))
     t = lambda_abs_vars(variables, body)
