@@ -111,9 +111,9 @@ def _dict_to_gsn(v: dict):
         case 'Evidence':
             return Evidence(description=v['description'])
         case 'Strategy':
-            if len(v['subgoals']) == 0:
+            if len(v['sub_goals']) == 0:
                 raise ValueError('Strategy must have more than one sub-goals')
-            sub_goals = [_dict_to_gsn(g) for g in v['subgoals']]
+            sub_goals = [_dict_to_gsn(g) for g in v['sub_goals']]
             if not all(isinstance(g, Goal) for g in sub_goals):
                 raise ValueError(f'Sub-goals {sub_goals} must be goals')
             return Strategy(description=v['description'],

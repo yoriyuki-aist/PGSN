@@ -26,8 +26,8 @@ _sub_goals = variable('sub_goals')
 
 evidence = lambda_abs_keywords(arguments={'description': _d},
                                body=instantiate(evidence_class)({'description': _d}))
-strategy = lambda_abs_keywords(arguments={'description': _d, 'subgoals': _sub_goals},
-                               body=instantiate(strategy_class)({'description': _d, 'subgoals': _sub_goals}))
+strategy = lambda_abs_keywords(arguments={'description': _d, 'sub_goals': _sub_goals},
+                               body=instantiate(strategy_class)({'description': _d, 'sub_goals': _sub_goals}))
 goal = lambda_abs_keywords(arguments={'description': _d,
                                       'assumptions': _assumptions,
                                       'contexts': _contexts,
