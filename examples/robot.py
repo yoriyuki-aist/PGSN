@@ -47,6 +47,6 @@ if __name__ == '__main__':
     # n = gsn.pgsn_to_gsn(evidence_class, steps=10000)
     # print(json.dumps(gsn.python_val(n), sort_keys=True, indent=4))
     #print(s('subgoals').fully_eval())
-    print(system.fully_eval(step=10000))
+    print(system.fully_eval(steps=10000))
     n = gsn.pgsn_to_gsn(system, steps=10000)
     print(json.dumps(gsn.python_val(n), sort_keys=True, indent=4))
